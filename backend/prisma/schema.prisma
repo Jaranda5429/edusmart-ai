@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+model User {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  email     String   @unique
+  password  String
+  rol       Rol      @default(ESTUDIANTE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cursosCreados Curso[]       @relation("ProfesorCursos")
+  inscripciones Inscripcion[]
+  entregas      Entrega[]
+  mensajes      Mensaje[]
+}
+
+enum Rol {
+  PROFESOR
+  ESTUDIANTE
+}
+
+model Curso {
+  id          Int      @id @default(autoincrement())
+  titulo      String
+  descripcion String
+  imagen      String?
+  profesorId  Int
+  createdAt   DateTime @default(now())
+
+  profesor      User          @relation("ProfesorCursos", fields: [profesorId], references: [id])
+  inscripciones Inscripcion[]
+  contenidos    Contenido[]
+  tareas        Tarea[]
+  quizzes       Quiz[]
+}
+
+model Inscripcion {
+  id           Int      @id @default(autoincrement())
+  estudianteId Int
+  cursoId      Int
+  createdAt    DateTime @default(now())
+
+  estudiante User  @relation(fields: [estudianteId], references: [id])
+  curso      Curso @relation(fields: [cursoId], references: [id])
+}
+
+model Contenido {
+  id        Int           @id @default(autoincrement())
+  titulo    String
+  tipo      TipoContenido
+  url       String?
+  texto     String?
+  cursoId   Int
+  createdAt DateTime      @default(now())
+
+  curso Curso @relation(fields: [cursoId], references: [id])
+}
+
+enum TipoContenido {
+  VIDEO
+  GUIA
+  DOCUMENTO
+}
+
+model Tarea {
+  id          Int      @id @default(autoincrement())
+  titulo      String
+  descripcion String
+  fechaLimite DateTime
+  cursoId     Int
+  createdAt   DateTime @default(now())
+
+  curso    Curso     @relation(fields: [cursoId], references: [id])
+  entregas Entrega[]
+}
+
+model Entrega {
+  id           Int      @id @default(autoincrement())
+  contenido    String
+  calificacion Float?
+  estudianteId Int
+  tareaId      Int
+  createdAt    DateTime @default(now())
+
+  estudiante User  @relation(fields: [estudianteId], references: [id])
+  tarea      Tarea @relation(fields: [tareaId], references: [id])
+}
+
+model Quiz {
+  id        Int      @id @default(autoincrement())
+  titulo    String
+  cursoId   Int
+  createdAt DateTime @default(now())
+
+  curso     Curso      @relation(fields: [cursoId], references: [id])
+  preguntas Pregunta[]
+}
+
+model Pregunta {
+  id       Int      @id @default(autoincrement())
+  texto    String
+  opciones String[]
+  correcta Int
+  quizId   Int
+
+  quiz Quiz @relation(fields: [quizId], references: [id])
+}
+
+model Mensaje {
+  id        Int      @id @default(autoincrement())
+  contenido String
+  userId    Int
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
