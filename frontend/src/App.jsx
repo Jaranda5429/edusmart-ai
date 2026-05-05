@@ -4,6 +4,7 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ProfesorDashboard from './pages/teacher/Dashboard'
 import EstudianteDashboard from './pages/student/Dashboard'
+import EstudianteCursos from './pages/student/Cursos'
 
 const ProtectedRoute = ({ children, rol }) => {
   const { usuario, loading } = useAuth()
@@ -35,6 +36,11 @@ const AppRoutes = () => {
       <Route path="/estudiante/dashboard" element={
         <ProtectedRoute rol="ESTUDIANTE">
           <EstudianteDashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/estudiante/cursos" element={
+        <ProtectedRoute rol="ESTUDIANTE">
+          <EstudianteCursos />
         </ProtectedRoute>
       } />
       <Route path="/" element={
