@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ProfesorDashboard from './pages/teacher/Dashboard'
+import EstudianteDashboard from './pages/student/Dashboard'
 
 const ProtectedRoute = ({ children, rol }) => {
   const { usuario, loading } = useAuth()
@@ -29,6 +30,11 @@ const AppRoutes = () => {
       <Route path="/profesor/dashboard" element={
         <ProtectedRoute rol="PROFESOR">
           <ProfesorDashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/estudiante/dashboard" element={
+        <ProtectedRoute rol="ESTUDIANTE">
+          <EstudianteDashboard />
         </ProtectedRoute>
       } />
       <Route path="/" element={
