@@ -141,7 +141,7 @@ const Asistente = () => {
           <div className="flex-1 bg-white rounded-2xl shadow-sm flex flex-col">
 
             {/* Mensajes */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-4 max-h-96">
+            <div className="flex-1 p-6 overflow-y-auto space-y-4" style={{height: '300px'}}>
               {mensajes.map((msg, index) => (
                 <div key={index} className={`flex gap-3 ${msg.rol === 'usuario' ? 'flex-row-reverse' : ''}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${

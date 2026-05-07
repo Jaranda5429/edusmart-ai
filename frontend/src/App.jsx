@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ProfesorDashboard from './pages/teacher/Dashboard'
+import ProfesorCursos from './pages/teacher/Cursos'
 import EstudianteDashboard from './pages/student/Dashboard'
 import EstudianteCursos from './pages/student/Cursos'
 import EstudianteAsistente from './pages/student/Asistente'
@@ -29,11 +30,20 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
+      {/* Rutas del Profesor */}
       <Route path="/profesor/dashboard" element={
         <ProtectedRoute rol="PROFESOR">
           <ProfesorDashboard />
         </ProtectedRoute>
       } />
+      <Route path="/profesor/cursos" element={
+        <ProtectedRoute rol="PROFESOR">
+          <ProfesorCursos />
+        </ProtectedRoute>
+      } />
+
+      {/* Rutas del Estudiante */}
       <Route path="/estudiante/dashboard" element={
         <ProtectedRoute rol="ESTUDIANTE">
           <EstudianteDashboard />
@@ -49,6 +59,8 @@ const AppRoutes = () => {
           <EstudianteAsistente />
         </ProtectedRoute>
       } />
+
+      {/* Ruta raíz */}
       <Route path="/" element={
         usuario
           ? usuario.rol === 'PROFESOR'
