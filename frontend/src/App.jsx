@@ -4,6 +4,7 @@ import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import ProfesorDashboard from './pages/teacher/Dashboard'
 import ProfesorCursos from './pages/teacher/Cursos'
+import ProfesorDetalleCurso from './pages/teacher/DetalleCurso'
 import EstudianteDashboard from './pages/student/Dashboard'
 import EstudianteCursos from './pages/student/Cursos'
 import EstudianteAsistente from './pages/student/Asistente'
@@ -40,6 +41,11 @@ const AppRoutes = () => {
       <Route path="/profesor/cursos" element={
         <ProtectedRoute rol="PROFESOR">
           <ProfesorCursos />
+        </ProtectedRoute>
+      } />
+      <Route path="/profesor/cursos/:id" element={
+        <ProtectedRoute rol="PROFESOR">
+          <ProfesorDetalleCurso />
         </ProtectedRoute>
       } />
 
