@@ -8,6 +8,7 @@ import ProfesorDetalleCurso from './pages/teacher/DetalleCurso'
 import EstudianteDashboard from './pages/student/Dashboard'
 import EstudianteCursos from './pages/student/Cursos'
 import EstudianteAsistente from './pages/student/Asistente'
+import EstudianteDetalleCurso from './pages/student/DetalleCurso'
 
 const ProtectedRoute = ({ children, rol }) => {
   const { usuario, loading } = useAuth()
@@ -63,6 +64,12 @@ const AppRoutes = () => {
       <Route path="/estudiante/asistente" element={
         <ProtectedRoute rol="ESTUDIANTE">
           <EstudianteAsistente />
+        </ProtectedRoute>
+      } />
+
+      <Route path="/estudiante/cursos/:id" element={
+        <ProtectedRoute rol="ESTUDIANTE">
+          <EstudianteDetalleCurso />
         </ProtectedRoute>
       } />
 
