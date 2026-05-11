@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client')
+const { upload } = require('../utils/cloudinary')
 const prisma = new PrismaClient()
 
 const crearTarea = async (req, res) => {
@@ -78,10 +79,6 @@ const entregarTarea = async (req, res) => {
     const { contenido } = req.body
     const estudianteId = req.usuario.id
 
-    if (!contenido) {
-      return res.status(400).json({ message: 'El contenido de la entrega es obligatorio' })
-    }
-
     const entregaExiste = await prisma.entrega.findFirst({
       where: { tareaId: parseInt(id), estudianteId }
     })
@@ -92,9 +89,51 @@ const entregarTarea = async (req, res) => {
 
     const entrega = await prisma.entrega.create({
       data: {
-        contenido,
+        contenido: contenido || 'Sin texto',
         estudianteId,
         tareaId: parseInt(id)
+      }
+    })
+
+    res.status(201).json({ message: 'Tarea entregada exitosamente', entrega })
+  } catch (error) {
+    res.status(500).json({ message: 'Error en el servidor', error: error.message })
+  }
+}
+
+const entregarTareaConArchivo = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { contenido } = req.body
+    const estudianteId = req.usuario.id
+
+    const entregaExiste = await prisma.entrega.findFirst({
+      where: { tareaId: parseInt(id), estudianteId }
+    })
+
+    if (entregaExiste) {
+      return res.status(400).json({ message: 'Ya entregaste esta tarea' })
+    }
+
+    let archivoUrl = null
+    let archivoNombre = null
+
+    if (req.file) {
+      archivoUrl = req.file.path
+      archivoNombre = req.file.originalname
+    }
+
+    if (!contenido && !archivoUrl) {
+      return res.status(400).json({ message: 'Debes agregar texto o un archivo' })
+    }
+
+    const entrega = await prisma.entrega.create({
+      data: {
+        contenido: contenido || 'Archivo adjunto',
+        estudianteId,
+        tareaId: parseInt(id),
+        archivoUrl,
+        archivoNombre
       }
     })
 
@@ -129,5 +168,6 @@ module.exports = {
   obtenerTareasPorCurso,
   obtenerTareaPorId,
   entregarTarea,
+  entregarTareaConArchivo,
   calificarEntrega
 }

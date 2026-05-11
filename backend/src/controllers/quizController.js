@@ -74,6 +74,7 @@ const responderQuiz = async (req, res) => {
   try {
     const { id } = req.params
     const { respuestas } = req.body
+    const estudianteId = req.usuario.id
 
     const quiz = await prisma.quiz.findUnique({
       where: { id: parseInt(id) },
@@ -82,6 +83,14 @@ const responderQuiz = async (req, res) => {
 
     if (!quiz) {
       return res.status(404).json({ message: 'Quiz no encontrado' })
+    }
+
+    const yaRespondio = await prisma.resultadoQuiz.findFirst({
+      where: { quizId: parseInt(id), estudianteId }
+    })
+
+    if (yaRespondio) {
+      return res.status(400).json({ message: 'Ya respondiste este quiz' })
     }
 
     let correctas = 0
@@ -98,6 +107,17 @@ const responderQuiz = async (req, res) => {
 
     const calificacion = (correctas / quiz.preguntas.length) * 10
 
+    await prisma.resultadoQuiz.create({
+      data: {
+        estudianteId,
+        quizId: parseInt(id),
+        calificacion,
+        correctas,
+        total: quiz.preguntas.length,
+        respuestas: resultados
+      }
+    })
+
     res.json({
       message: 'Quiz completado',
       calificacion: calificacion.toFixed(1),
@@ -110,9 +130,26 @@ const responderQuiz = async (req, res) => {
   }
 }
 
+const obtenerResultadosQuiz = async (req, res) => {
+  try {
+    const { id } = req.params
+    const resultados = await prisma.resultadoQuiz.findMany({
+      where: { quizId: parseInt(id) },
+      include: {
+        estudiante: { select: { id: true, nombre: true, email: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    res.json(resultados)
+  } catch (error) {
+    res.status(500).json({ message: 'Error en el servidor', error: error.message })
+  }
+}
+
 module.exports = {
   crearQuiz,
   obtenerQuizzesPorCurso,
   obtenerQuizPorId,
-  responderQuiz
+  responderQuiz,
+  obtenerResultadosQuiz
 }

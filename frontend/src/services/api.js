@@ -47,6 +47,9 @@ export const tareaService = {
   obtenerPorId: (id) => api.get(`/tareas/${id}`),
   crear: (data) => api.post('/tareas', data),
   entregar: (id, data) => api.post(`/tareas/${id}/entregar`, data),
+  entregarConArchivo: (id, formData) => api.post(`/tareas/${id}/entregar-archivo`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   calificar: (entregaId, data) => api.put(`/tareas/entregas/${entregaId}/calificar`, data)
 }
 
@@ -54,7 +57,8 @@ export const quizService = {
   obtenerPorCurso: (cursoId) => api.get(`/quizzes/curso/${cursoId}`),
   obtenerPorId: (id) => api.get(`/quizzes/${id}`),
   crear: (data) => api.post('/quizzes', data),
-  responder: (id, data) => api.post(`/quizzes/${id}/responder`, data)
+  responder: (id, data) => api.post(`/quizzes/${id}/responder`, data),
+  obtenerResultados: (id) => api.get(`/quizzes/${id}/resultados`)
 }
 
 export const iaService = {

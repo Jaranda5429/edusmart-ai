@@ -122,7 +122,7 @@ const Asistente = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Header */}
         <div className="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
@@ -135,13 +135,16 @@ const Asistente = () => {
           </div>
         </div>
 
-        <div className="flex-1 flex p-6 gap-6">
+        {/* ✅ CAMBIO 1: overflow-hidden para que no crezca infinito */}
+        <div className="flex-1 flex p-6 gap-6 overflow-hidden">
 
           {/* Chat */}
-          <div className="flex-1 bg-white rounded-2xl shadow-sm flex flex-col">
+          {/* ✅ CAMBIO 2: overflow-hidden en el contenedor del chat */}
+          <div className="flex-1 bg-white rounded-2xl shadow-sm flex flex-col overflow-hidden" style={{ maxHeight: 'calc(100vh - 180px)' }}>
 
             {/* Mensajes */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-4" style={{height: '300px'}}>
+            {/* ✅ CAMBIO 3: altura dinámica con scroll interno */}
+            <div className="flex-1 p-6 overflow-y-auto space-y-4">
               {mensajes.map((msg, index) => (
                 <div key={index} className={`flex gap-3 ${msg.rol === 'usuario' ? 'flex-row-reverse' : ''}`}>
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${
@@ -174,7 +177,7 @@ const Asistente = () => {
             </div>
 
             {/* Input */}
-            <div className="p-4 border-t">
+            <div className="p-4 border-t flex-shrink-0">
               <div className="flex gap-3">
                 <textarea
                   value={input}
@@ -196,7 +199,7 @@ const Asistente = () => {
           </div>
 
           {/* Panel de configuración */}
-          <div className="w-64 space-y-4">
+          <div className="w-64 space-y-4 overflow-y-auto">
 
             {/* Modo */}
             <div className="bg-white rounded-2xl shadow-sm p-4">

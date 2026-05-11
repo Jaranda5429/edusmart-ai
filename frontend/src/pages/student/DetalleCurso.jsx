@@ -4,6 +4,7 @@ import { cursoService, tareaService, quizService } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 
 const DetalleCurso = () => {
+  const [archivo, setArchivo] = useState(null)
   const { id } = useParams()
   const [curso, setCurso] = useState(null)
   const [tareas, setTareas] = useState([])
@@ -51,23 +52,31 @@ const DetalleCurso = () => {
   }
 
   const handleEntregar = async () => {
-    if (!entrega.trim()) return
-    setEntregando(true)
-    try {
+  if (!entrega.trim() && !archivo) return
+  setEntregando(true)
+  try {
+    if (archivo) {
+      const formData = new FormData()
+      formData.append('archivo', archivo)
+      if (entrega.trim()) formData.append('contenido', entrega)
+      await tareaService.entregarConArchivo(tareaSeleccionada.id, formData)
+    } else {
       await tareaService.entregar(tareaSeleccionada.id, { contenido: entrega })
-      const nuevasEntregadas = { ...tareasEntregadas, [tareaSeleccionada.id]: true }
-      setTareasEntregadas(nuevasEntregadas)
-      localStorage.setItem(`tareas_entregadas_${id}`, JSON.stringify(nuevasEntregadas))
-      setShowModalTarea(false)
-      setEntrega('')
-      setTareaSeleccionada(null)
-      alert('¡Tarea entregada exitosamente!')
-    } catch (error) {
-      alert(error.response?.data?.message || 'Error al entregar')
-    } finally {
-      setEntregando(false)
     }
+    const nuevasEntregadas = { ...tareasEntregadas, [tareaSeleccionada.id]: true }
+    setTareasEntregadas(nuevasEntregadas)
+    localStorage.setItem(`tareas_entregadas_${id}`, JSON.stringify(nuevasEntregadas))
+    setShowModalTarea(false)
+    setEntrega('')
+    setArchivo(null)
+    setTareaSeleccionada(null)
+    alert('¡Tarea entregada exitosamente!')
+  } catch (error) {
+    alert(error.response?.data?.message || 'Error al entregar')
+  } finally {
+    setEntregando(false)
   }
+}
 
   const handleResponderQuiz = async () => {
     if (respuestas.includes(null)) return
@@ -260,40 +269,71 @@ const DetalleCurso = () => {
         </div>
       </div>
 
-      {/* Modal Entregar Tarea */}
-      {showModalTarea && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl">
-            <h3 className="font-bold text-gray-800 text-lg mb-1">{tareaSeleccionada?.titulo}</h3>
-            <p className="text-gray-500 text-sm mb-4">{tareaSeleccionada?.descripcion}</p>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Tu entrega</label>
-              <textarea
-                value={entrega}
-                onChange={(e) => setEntrega(e.target.value)}
-                placeholder="Escribe tu respuesta aquí..."
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
-                rows={6}
-              />
-            </div>
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={() => { setShowModalTarea(false); setEntrega('') }}
-                className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl text-sm font-medium hover:bg-grisSuave"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleEntregar}
-                disabled={entregando}
-                className="flex-1 bg-purple-600 text-white py-3 rounded-xl text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
-              >
-                {entregando ? 'Entregando...' : 'Entregar Tarea'}
-              </button>
-            </div>
+{/* Modal Entregar Tarea */}
+{showModalTarea && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl">
+      <h3 className="font-bold text-gray-800 text-lg mb-1">{tareaSeleccionada?.titulo}</h3>
+      <p className="text-gray-500 text-sm mb-4">{tareaSeleccionada?.descripcion}</p>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Tu respuesta (opcional)</label>
+          <textarea
+            value={entrega}
+            onChange={(e) => setEntrega(e.target.value)}
+            placeholder="Escribe tu respuesta aquí..."
+            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+            rows={4}
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Adjuntar archivo (opcional)</label>
+          <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-purple-400 transition-all">
+            <input
+              type="file"
+              id="archivo"
+              accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png"
+              onChange={(e) => setArchivo(e.target.files[0])}
+              className="hidden"
+            />
+            <label htmlFor="archivo" className="cursor-pointer">
+              {archivo ? (
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-2xl">📄</span>
+                  <span className="text-sm text-purple-600 font-medium">{archivo.name}</span>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-3xl">📎</span>
+                  <p className="text-sm text-gray-500 mt-1">Click para adjuntar archivo</p>
+                  <p className="text-xs text-gray-400">PDF, Word, Excel, PowerPoint, imágenes</p>
+                </div>
+              )}
+            </label>
           </div>
         </div>
-      )}
+      </div>
+
+      <div className="flex gap-3 mt-4">
+        <button
+          onClick={() => { setShowModalTarea(false); setEntrega(''); setArchivo(null) }}
+          className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl text-sm font-medium hover:bg-grisSuave"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={handleEntregar}
+          disabled={entregando || (!entrega.trim() && !archivo)}
+          className="flex-1 bg-purple-600 text-white py-3 rounded-xl text-sm font-medium hover:bg-purple-700 disabled:opacity-50"
+        >
+          {entregando ? 'Entregando...' : 'Entregar Tarea'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Modal Quiz */}
       {quizSeleccionado && (

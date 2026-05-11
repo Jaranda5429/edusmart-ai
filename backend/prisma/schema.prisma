@@ -20,6 +20,7 @@ model User {
   inscripciones Inscripcion[]
   entregas      Entrega[]
   mensajes      Mensaje[]
+  resultadosQuiz ResultadoQuiz[]
 }
 
 enum Rol {
@@ -86,6 +87,8 @@ model Entrega {
   id           Int      @id @default(autoincrement())
   contenido    String
   calificacion Float?
+  archivoUrl   String?
+  archivoNombre String?
   estudianteId Int
   tareaId      Int
   createdAt    DateTime @default(now())
@@ -102,6 +105,7 @@ model Quiz {
 
   curso     Curso      @relation(fields: [cursoId], references: [id])
   preguntas Pregunta[]
+  resultados ResultadoQuiz[]
 }
 
 model Pregunta {
@@ -121,4 +125,18 @@ model Mensaje {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
+}
+
+model ResultadoQuiz {
+  id           Int      @id @default(autoincrement())
+  estudianteId Int
+  quizId       Int
+  calificacion Float
+  correctas    Int
+  total        Int
+  respuestas   Json
+  createdAt    DateTime @default(now())
+
+  estudiante User @relation(fields: [estudianteId], references: [id])
+  quiz       Quiz @relation(fields: [quizId], references: [id])
 }
