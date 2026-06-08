@@ -7,116 +7,205 @@ datasource db {
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
-model User {
-  id        Int      @id @default(autoincrement())
-  nombre    String
-  email     String   @unique
-  password  String
-  rol       Rol      @default(ESTUDIANTE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  cursosCreados Curso[]       @relation("ProfesorCursos")
-  inscripciones Inscripcion[]
-  entregas      Entrega[]
-  mensajes      Mensaje[]
-  resultadosQuiz ResultadoQuiz[]
+// ─── USUARIOS ────────────────────────────────────────────────────────────────
+
+model User {
+  id               Int       @id @default(autoincrement())
+  nombre           String
+  email            String    @unique
+  password         String
+  rol              Rol       @default(ESTUDIANTE)
+  activo           Boolean   @default(true)
+  // Membresía (solo profesores)
+  membresiaActiva  Boolean   @default(false)
+  membresiaTipo    String?   // "mensual" | "anual"
+  membresiaVence   DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Relaciones
+  periodos         Periodo[]
+  pagos            Pago[]
+  inscripciones    Inscripcion[]
+  entregas         Entrega[]
+  respuestasForo   RespuestaForo[]
+  mensajes         Mensaje[]
 }
 
 enum Rol {
+  ADMIN
   PROFESOR
   ESTUDIANTE
 }
 
-model Curso {
-  id          Int      @id @default(autoincrement())
-  titulo      String
-  descripcion String
-  imagen      String?
-  profesorId  Int
-  createdAt   DateTime @default(now())
+// ─── MEMBRESÍA / PAGOS ───────────────────────────────────────────────────────
 
-  profesor      User          @relation("ProfesorCursos", fields: [profesorId], references: [id])
-  inscripciones Inscripcion[]
-  contenidos    Contenido[]
-  tareas        Tarea[]
-  quizzes       Quiz[]
+model Pago {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tipo      String   // "mensual" | "anual"
+  monto     Int      // en pesos colombianos
+  estado    String   @default("aprobado")
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+// ─── ESTRUCTURA ACADÉMICA ────────────────────────────────────────────────────
+
+model Periodo {
+  id         Int      @id @default(autoincrement())
+  nombre     String
+  fechaInicio DateTime?
+  fechaFin   DateTime?
+  activo     Boolean  @default(true)
+  profesorId Int
+  createdAt  DateTime @default(now())
+
+  profesor User    @relation(fields: [profesorId], references: [id], onDelete: Cascade)
+  grados   Grado[]
+}
+
+model Grado {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  periodoId Int
+  createdAt DateTime @default(now())
+
+  periodo  Periodo   @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  materias Materia[]
+}
+
+model Materia {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  icono     String   @default("📖")
+  codigo    String?  @unique
+  gradoId   Int
+  createdAt DateTime @default(now())
+
+  grado         Grado         @relation(fields: [gradoId], references: [id], onDelete: Cascade)
+  actividades   Actividad[]
+  inscripciones Inscripcion[]
+}
+
+// ─── INSCRIPCIONES ───────────────────────────────────────────────────────────
 
 model Inscripcion {
   id           Int      @id @default(autoincrement())
   estudianteId Int
-  cursoId      Int
+  materiaId    Int
   createdAt    DateTime @default(now())
 
-  estudiante User  @relation(fields: [estudianteId], references: [id])
-  curso      Curso @relation(fields: [cursoId], references: [id])
+  estudiante User    @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  materia    Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+
+  @@unique([estudianteId, materiaId])
+}
+
+// ─── ACTIVIDADES ─────────────────────────────────────────────────────────────
+
+model Actividad {
+  id           Int      @id @default(autoincrement())
+  titulo       String
+  descripcion  String?
+  fechaInicio  DateTime?
+  fechaLimite  DateTime
+  foroActivo   Boolean  @default(false)
+  soloForo     Boolean  @default(false)
+  foroTema     String?
+  materiaId    Int
+  createdAt    DateTime @default(now())
+
+  materia    Materia     @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  contenidos Contenido[]
+  entregas   Entrega[]
+  foro       Foro?
 }
 
 model Contenido {
-  id        Int           @id @default(autoincrement())
-  titulo    String
-  tipo      TipoContenido
-  url       String?
-  texto     String?
-  cursoId   Int
-  createdAt DateTime      @default(now())
-
-  curso Curso @relation(fields: [cursoId], references: [id])
-}
-
-enum TipoContenido {
-  VIDEO
-  GUIA
-  DOCUMENTO
-}
-
-model Tarea {
   id          Int      @id @default(autoincrement())
-  titulo      String
-  descripcion String
-  fechaLimite DateTime
-  cursoId     Int
+  tipo        String   // archivo | video_link | explicacion | quiz | link | imagen
+  label       String
+  icono       String   @default("📄")
+  texto       String?
+  url         String?
+  nombre      String?
+  actividadId Int
   createdAt   DateTime @default(now())
 
-  curso    Curso     @relation(fields: [cursoId], references: [id])
-  entregas Entrega[]
-}
-
-model Entrega {
-  id           Int      @id @default(autoincrement())
-  contenido    String
-  calificacion Float?
-  archivoUrl   String?
-  archivoNombre String?
-  estudianteId Int
-  tareaId      Int
-  createdAt    DateTime @default(now())
-
-  estudiante User  @relation(fields: [estudianteId], references: [id])
-  tarea      Tarea @relation(fields: [tareaId], references: [id])
-}
-
-model Quiz {
-  id        Int      @id @default(autoincrement())
-  titulo    String
-  cursoId   Int
-  createdAt DateTime @default(now())
-
-  curso     Curso      @relation(fields: [cursoId], references: [id])
+  actividad Actividad  @relation(fields: [actividadId], references: [id], onDelete: Cascade)
   preguntas Pregunta[]
-  resultados ResultadoQuiz[]
 }
 
 model Pregunta {
-  id       Int      @id @default(autoincrement())
-  texto    String
-  opciones String[]
-  correcta Int
-  quizId   Int
+  id          Int      @id @default(autoincrement())
+  texto       String
+  opciones    String[]
+  correcta    Int
+  contenidoId Int
 
-  quiz Quiz @relation(fields: [quizId], references: [id])
+  contenido Contenido @relation(fields: [contenidoId], references: [id], onDelete: Cascade)
 }
+
+// ─── ENTREGAS ────────────────────────────────────────────────────────────────
+
+model Entrega {
+  id           Int      @id @default(autoincrement())
+  texto        String?
+  archivoUrl   String?
+  archivoNombre String?
+  entregado    Boolean  @default(false)
+  calificacion Float?
+  estudianteId Int
+  actividadId  Int
+  createdAt    DateTime @default(now())
+
+  estudiante User      @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  actividad  Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+
+  @@unique([estudianteId, actividadId])
+}
+
+// ─── FORO ────────────────────────────────────────────────────────────────────
+
+model Foro {
+  id          Int      @id @default(autoincrement())
+  tema        String
+  fechaLimite DateTime?
+  actividadId Int      @unique
+  createdAt   DateTime @default(now())
+
+  actividad  Actividad       @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  respuestas RespuestaForo[]
+}
+
+model RespuestaForo {
+  id           Int      @id @default(autoincrement())
+  respuesta    String?
+  estudianteId Int
+  foroId       Int
+  createdAt    DateTime @default(now())
+
+  estudiante  User         @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  foro        Foro         @relation(fields: [foroId], references: [id], onDelete: Cascade)
+  comentarios Comentario[]
+
+  @@unique([estudianteId, foroId])
+}
+
+model Comentario {
+  id              Int      @id @default(autoincrement())
+  texto           String
+  autorNombre     String
+  respuestaForoId Int
+  createdAt       DateTime @default(now())
+
+  respuestaForo RespuestaForo @relation(fields: [respuestaForoId], references: [id], onDelete: Cascade)
+}
+
+// ─── MENSAJES IA ─────────────────────────────────────────────────────────────
 
 model Mensaje {
   id        Int      @id @default(autoincrement())
@@ -124,19 +213,5 @@ model Mensaje {
   userId    Int
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id])
-}
-
-model ResultadoQuiz {
-  id           Int      @id @default(autoincrement())
-  estudianteId Int
-  quizId       Int
-  calificacion Float
-  correctas    Int
-  total        Int
-  respuestas   Json
-  createdAt    DateTime @default(now())
-
-  estudiante User @relation(fields: [estudianteId], references: [id])
-  quiz       Quiz @relation(fields: [quizId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

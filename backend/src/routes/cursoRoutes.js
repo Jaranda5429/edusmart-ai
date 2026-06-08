@@ -8,13 +8,15 @@ const {
   eliminarCurso,
   misCursos,
   inscribirseACurso,
-  cursosInscritos
+  cursosInscritos,
+  obtenerAnaliticas
 } = require('../controllers/cursoController')
 const { verificarToken, soloProfesor, soloEstudiante } = require('../middlewares/authMiddleware')
 
 router.get('/', obtenerCursos)
 router.get('/mis-cursos', verificarToken, soloProfesor, misCursos)
 router.get('/inscritos', verificarToken, soloEstudiante, cursosInscritos)
+router.get('/analiticas', verificarToken, soloProfesor, obtenerAnaliticas) // ← nueva
 router.get('/:id', obtenerCursoPorId)
 router.post('/', verificarToken, soloProfesor, crearCurso)
 router.put('/:id', verificarToken, soloProfesor, actualizarCurso)

@@ -1,5 +1,4 @@
 const { PrismaClient } = require('@prisma/client')
-const { upload } = require('../utils/cloudinary')
 const prisma = new PrismaClient()
 
 const crearTarea = async (req, res) => {

@@ -166,6 +166,104 @@ const cursosInscritos = async (req, res) => {
   }
 }
 
+const obtenerAnaliticas = async (req, res) => {
+  try {
+    const profesorId = req.usuario.id
+
+    // Cursos del profesor con toda la info necesaria
+    const cursos = await prisma.curso.findMany({
+      where: { profesorId },
+      include: {
+        inscripciones: {
+          include: {
+            estudiante: { select: { id: true, nombre: true, email: true } }
+          }
+        },
+        tareas: {
+          include: {
+            entregas: {
+              select: { calificacion: true, estudianteId: true }
+            }
+          }
+        },
+        quizzes: {
+          include: {
+            resultados: {
+              select: { calificacion: true, estudianteId: true }
+            }
+          }
+        }
+      }
+    })
+
+    const analiticas = cursos.map(curso => {
+      const totalEstudiantes = curso.inscripciones.length
+
+      // Calificaciones de tareas
+      const calificacionesTareas = curso.tareas.flatMap(t =>
+        t.entregas
+          .filter(e => e.calificacion !== null)
+          .map(e => e.calificacion)
+      )
+
+      // Calificaciones de quizzes
+      const calificacionesQuizzes = curso.quizzes.flatMap(q =>
+        q.resultados.map(r => r.calificacion)
+      )
+
+      const todasCalificaciones = [...calificacionesTareas, ...calificacionesQuizzes]
+      const promedio = todasCalificaciones.length > 0
+        ? (todasCalificaciones.reduce((a, b) => a + b, 0) / todasCalificaciones.length).toFixed(1)
+        : 0
+
+      // Entregas totales vs esperadas
+      const entregasTotales = curso.tareas.reduce((acc, t) => acc + t.entregas.length, 0)
+      const entregasEsperadas = curso.tareas.length * totalEstudiantes
+
+      // Resultados quizzes
+      const quizzesTotales = curso.quizzes.reduce((acc, q) => acc + q.resultados.length, 0)
+      const quizzesEsperados = curso.quizzes.length * totalEstudiantes
+
+      return {
+        id: curso.id,
+        titulo: curso.titulo,
+        totalEstudiantes,
+        totalTareas: curso.tareas.length,
+        totalQuizzes: curso.quizzes.length,
+        entregasTotales,
+        entregasEsperadas,
+        quizzesTotales,
+        quizzesEsperados,
+        promedio: parseFloat(promedio),
+        estudiantes: curso.inscripciones.map(i => {
+          // Calificaciones por estudiante
+          const califs = []
+          curso.tareas.forEach(t => {
+            const entrega = t.entregas.find(e => e.estudianteId === i.estudiante.id)
+            if (entrega?.calificacion) califs.push(entrega.calificacion)
+          })
+          curso.quizzes.forEach(q => {
+            const resultado = q.resultados.find(r => r.estudianteId === i.estudiante.id)
+            if (resultado) califs.push(resultado.calificacion)
+          })
+          const promedioEstudiante = califs.length > 0
+            ? (califs.reduce((a, b) => a + b, 0) / califs.length).toFixed(1)
+            : 0
+          return {
+            ...i.estudiante,
+            promedio: parseFloat(promedioEstudiante),
+            actividades: califs.length
+          }
+        })
+      }
+    })
+
+    res.json(analiticas)
+  } catch (error) {
+    res.status(500).json({ message: 'Error en el servidor', error: error.message })
+  }
+}
+
 module.exports = {
   crearCurso,
   obtenerCursos,
@@ -174,5 +272,6 @@ module.exports = {
   eliminarCurso,
   misCursos,
   inscribirseACurso,
-  cursosInscritos
+  cursosInscritos,
+  obtenerAnaliticas 
 }

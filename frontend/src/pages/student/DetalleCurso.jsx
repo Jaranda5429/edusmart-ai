@@ -3,6 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { cursoService, tareaService, quizService } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
 
+const NAV = [
+  { icon: '🏠', label: 'Inicio', path: '/estudiante/dashboard' },
+  { icon: '📚', label: 'Mis Cursos', path: '/estudiante/cursos' },
+  { icon: '📝', label: 'Tareas', path: '/estudiante/tareas' },
+  { icon: '📈', label: 'Progreso', path: '/estudiante/progreso' },
+  { icon: '🎮', label: 'Juegos', path: '/estudiante/juegos' },
+  { icon: '🔔', label: 'Notificaciones', path: '/estudiante/notificaciones' },
+]
+
 const DetalleCurso = () => {
   const [archivo, setArchivo] = useState(null)
   const { id } = useParams()
@@ -112,7 +121,8 @@ const DetalleCurso = () => {
     }
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-purple-600">Cargando...</div>
+    <Layout rol="ESTUDIANTE" navItems={NAV}>
+      <div className="max-w-6xl mx-auto px-5 py-6">
 
   return (
     <div className="min-h-screen bg-grisSuave flex">
@@ -130,7 +140,7 @@ const DetalleCurso = () => {
             { icon: '🎮', label: 'Juegos', path: '/estudiante/juegos' },
             { icon: '🤖', label: 'Asistente IA', path: '/estudiante/asistente' },
             { icon: '📊', label: 'Mi Progreso', path: '/estudiante/progreso' },
-            { icon: '💬', label: 'Mensajes', path: '/estudiante/mensajes' },
+            { icon: '🔔', label: 'Notificaciones', path: '/estudiante/notificaciones' },
           ].map((item) => (
             <button
               key={item.path}
@@ -154,7 +164,6 @@ const DetalleCurso = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
         <div className="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={() => navigate('/estudiante/cursos')} className="text-gray-400 hover:text-gray-600">←</button>
@@ -179,9 +188,7 @@ const DetalleCurso = () => {
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${
-                  tab === t ? 'bg-purple-600 text-white' : 'bg-white text-gray-600 hover:bg-lavanda'
-                }`}
+                className={`px-5 py-2 rounded-xl text-sm font-medium transition-all ${ tab === t ? 'bg-purple-600 text-white' : 'bg-white text-gray-600 hover:bg-lavanda' }`}
               >
                 {t === 'tareas' ? '📝 Tareas' : '❓ Quizzes'}
               </button>
@@ -378,11 +385,7 @@ const DetalleCurso = () => {
                             nuevas[index] = opIndex
                             setRespuestas(nuevas)
                           }}
-                          className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all border-2 ${
-                            respuestas[index] === opIndex
-                              ? 'border-purple-500 bg-lavanda text-purple-700'
-                              : 'border-gray-100 bg-grisSuave text-gray-700 hover:border-purple-300'
-                          }`}
+                          className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all border-2 ${ respuestas[index] === opIndex ? 'border-purple-500 bg-lavanda text-purple-700' : 'border-gray-100 bg-grisSuave text-gray-700 hover:border-purple-300' }`}
                         >
                           {opcion}
                         </button>
@@ -410,7 +413,7 @@ const DetalleCurso = () => {
           </div>
         </div>
       )}
-    </div>
+    </Layout>
   )
 }
 
