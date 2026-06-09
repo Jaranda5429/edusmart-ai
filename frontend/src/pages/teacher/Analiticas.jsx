@@ -33,7 +33,7 @@ export default function Analiticas() {
   }, [])
 
   // Calcular datos
-  const todosGrados = periodos.flatMap(p => p.grados || [])
+  const todosGrados = periodos.flatMap(p => (p.grados || []).map(g => ({ ...g, periodoNombre: p.nombre })))
   const todasMaterias = todosGrados.flatMap(g => g.materias || [])
   const todasActividades = todasMaterias.flatMap(m => m.actividades || [])
   const todasEntregas = todasActividades.flatMap(a => a.entregas || [])
@@ -63,7 +63,7 @@ export default function Analiticas() {
     const estudiantesGrado = new Set()
     ;(g.materias || []).forEach(m => (m.inscripciones || []).forEach(i => estudiantesGrado.add(i.estudianteId)))
     return {
-      name: g.nombre,
+      name: g.nombre + (g.periodoNombre ? ' (' + g.periodoNombre + ')' : ''),
       promedio: prom,
       estudiantes: estudiantesGrado.size,
       entregas: entregadas,

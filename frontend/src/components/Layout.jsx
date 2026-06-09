@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useProfesor } from '../context/ProfesorContext'
+import { foroService } from '../services/api'
 
 function SearchBar({ esProf }) {
   const [query, setQuery] = useState('')
@@ -221,7 +223,7 @@ function Header({ rol }) {
   )
 }
 
-function NavItem({ icon, label, path, dropdown }) {
+function NavItem({ icon, label, path, dropdown, badge }) {
   const navigate = useNavigate()
   const location = useLocation()
   const [show, setShow] = useState(false)
@@ -238,7 +240,10 @@ function NavItem({ icon, label, path, dropdown }) {
     <div className="relative flex-shrink-0" ref={ref}>
       <button onClick={() => { if (dropdown) setShow(p => !p); else navigate(path) }}
         className={'flex items-center gap-1.5 px-4 py-3.5 text-sm font-semibold transition-all relative whitespace-nowrap ' + (active ? 'text-purple-700' : 'text-gray-500 hover:text-gray-800')}>
-        <span className="text-base">{icon}</span>
+        <span className="text-base relative">
+          {icon}
+          {badge && <span className="absolute -top-1 -right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />}
+        </span>
         <span>{label}</span>
         {dropdown && (
           <svg className={'w-3.5 h-3.5 ml-0.5 transition-transform ' + (show ? 'rotate-180' : '')} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,13 +270,56 @@ function NavItem({ icon, label, path, dropdown }) {
 }
 
 export default function Layout({ children, rol, navItems }) {
+  const { usuario } = useAuth()
+  const { inscripciones } = useProfesor()
+  const [hayNotis, setHayNotis] = useState(false)
+
+  useEffect(() => {
+    if (rol !== 'ESTUDIANTE' || !usuario) return
+
+    const calcular = async () => {
+      let leidas = []
+      try { leidas = JSON.parse(localStorage.getItem('notis_leidas') || '[]') } catch {}
+
+      const ids = []
+      const ahora = Date.now()
+      const miId = usuario.id
+
+      ;(inscripciones || []).forEach(insc => {
+        (insc.materia?.actividades || []).forEach(act => {
+          const ent = (act.entregas || []).find(e => e.estudianteId === miId)
+          const creada = new Date(act.createdAt).getTime()
+          const noDisp = act.fechaInicio && new Date(act.fechaInicio).getTime() > ahora
+          if (ent?.entregado && ent?.calificacion != null) ids.push('calif-' + act.id)
+          else if (!ent?.entregado && !noDisp && (ahora - creada) <= 4 * 24 * 60 * 60 * 1000) ids.push('nueva-' + act.id)
+        })
+      })
+
+      try {
+        const res = await foroService.getNotificaciones()
+        ;(res.data || []).forEach(n => ids.push('bd-' + n.id))
+      } catch {}
+
+      const sinLeer = ids.some(id => !leidas.includes(id))
+      setHayNotis(sinLeer)
+    }
+
+    calcular()
+  }, [rol, usuario, inscripciones])
+
   return (
     <div className="min-h-screen bg-slate-50" style={{ fontFamily: 'Poppins,sans-serif' }}>
       <Header rol={rol} />
       <div className="fixed left-0 right-0 bg-white border-b border-gray-100"
         style={{ top: 68, zIndex: 40, boxShadow: '0 2px 8px rgba(0,0,0,0.04)', overflow: 'visible' }}>
         <div className="flex items-center px-4" style={{ overflow: 'visible' }}>
-          {navItems.map(item => <NavItem key={item.label} {...item} />)}
+          {navItems.map(item => (
+            <NavItem
+              key={item.label}
+              {...item}
+              badge={item.label === 'Notificaciones' && hayNotis}
+            />
+          ))}
         </div>
       </div>
       <div className="pt-[118px]">
@@ -279,4 +327,4 @@ export default function Layout({ children, rol, navItems }) {
       </div>
     </div>
   )
- }
+}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useProfesor } from '../../context/ProfesorContext'
 import { useAuth } from '../../context/AuthContext'
 import Layout from '../../components/Layout'
+import { foroService } from '../../services/api'
 
 const NAV = [
   { icon: '🏠', label: 'Inicio', path: '/estudiante/dashboard' },
@@ -43,6 +44,18 @@ export default function StudentNotificaciones() {
       return []
     }
   })
+
+  const [notisBD, setNotisBD] = useState([])
+
+  useEffect(() => {
+    const cargar = async () => {
+      try {
+        const res = await foroService.getNotificaciones()
+        setNotisBD(res.data || [])
+      } catch { console.error('Error cargando notis') }
+    }
+    cargar()
+  }, [])
 
   useEffect(() => {
     localStorage.setItem('notis_leidas', JSON.stringify(leidas))
@@ -123,8 +136,23 @@ export default function StudentNotificaciones() {
     })
 
     // Ordenar por fecha más reciente
+    // Agregar notificaciones de la base de datos (ej: foro eliminado)
+    notisBD.forEach(n => {
+      lista.push({
+        id: 'bd-' + n.id,
+        tipo: n.tipo,
+        icono: n.tipo === 'foro_eliminado' ? '🗑️' : '🔔',
+        color: 'red',
+        titulo: n.titulo,
+        mensaje: n.mensaje,
+        fecha: n.createdAt,
+        ruta: n.ruta || '/estudiante/cursos',
+      })
+    })
+
+    // Ordenar por fecha más reciente
     return lista.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-  }, [inscripciones, miId, ahora])
+  }, [inscripciones, miId, ahora, notisBD])
 
   const noLeidas = notificaciones.filter(n => !leidas.includes(n.id))
   const mostradas = filtro === 'sin_leer' ? noLeidas : notificaciones

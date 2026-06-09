@@ -25,12 +25,15 @@ model User {
   updatedAt        DateTime  @updatedAt
 
   // Relaciones
-  periodos         Periodo[]
-  pagos            Pago[]
-  inscripciones    Inscripcion[]
-  entregas         Entrega[]
-  respuestasForo   RespuestaForo[]
-  mensajes         Mensaje[]
+  periodos          Periodo[]
+  pagos             Pago[]
+  inscripciones     Inscripcion[]
+  entregas          Entrega[]
+  respuestasForo    RespuestaForo[]
+  mensajes          Mensaje[]
+  publicacionesForo PublicacionForo[]
+  comentariosPub    ComentarioPub[]
+  notificaciones    Notificacion[]
 }
 
 enum Rol {
@@ -88,6 +91,7 @@ model Materia {
   grado         Grado         @relation(fields: [gradoId], references: [id], onDelete: Cascade)
   actividades   Actividad[]
   inscripciones Inscripcion[]
+  forosTema     ForoTema[]
 }
 
 // ─── INSCRIPCIONES ───────────────────────────────────────────────────────────
@@ -168,7 +172,7 @@ model Entrega {
   @@unique([estudianteId, actividadId])
 }
 
-// ─── FORO ────────────────────────────────────────────────────────────────────
+// ─── FORO (de actividad, legacy) ─────────────────────────────────────────────
 
 model Foro {
   id          Int      @id @default(autoincrement())
@@ -203,6 +207,60 @@ model Comentario {
   createdAt       DateTime @default(now())
 
   respuestaForo RespuestaForo @relation(fields: [respuestaForoId], references: [id], onDelete: Cascade)
+}
+
+// ─── FORO INDEPENDIENTE (ligado a Materia) ───────────────────────────────────
+
+model ForoTema {
+  id          Int      @id @default(autoincrement())
+  titulo      String
+  descripcion String?
+  fechaLimite DateTime?
+  materiaId   Int
+  createdAt   DateTime @default(now())
+
+  materia       Materia           @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  publicaciones PublicacionForo[]
+}
+
+model PublicacionForo {
+  id           Int      @id @default(autoincrement())
+  texto        String
+  estudianteId Int
+  foroTemaId   Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  estudiante  User            @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  foroTema    ForoTema        @relation(fields: [foroTemaId], references: [id], onDelete: Cascade)
+  comentarios ComentarioPub[]
+}
+
+model ComentarioPub {
+  id            Int      @id @default(autoincrement())
+  texto         String
+  autorId       Int
+  autorNombre   String
+  publicacionId Int
+  createdAt     DateTime @default(now())
+
+  autor       User            @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  publicacion PublicacionForo @relation(fields: [publicacionId], references: [id], onDelete: Cascade)
+}
+
+// ─── NOTIFICACIONES (de evento) ──────────────────────────────────────────────
+
+model Notificacion {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  tipo      String
+  titulo    String
+  mensaje   String
+  leida     Boolean  @default(false)
+  ruta      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ─── MENSAJES IA ─────────────────────────────────────────────────────────────

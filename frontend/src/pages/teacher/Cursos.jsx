@@ -3,6 +3,8 @@ import { useProfesor } from '../../context/ProfesorContext'
 import { useAuth } from '../../context/AuthContext'
 import Layout from '../../components/Layout'
 import { useSearchParams } from 'react-router-dom'
+import { foroService } from '../../services/api'
+import { subirContenido } from '../../services/supabase'
 
 const NAV = [
   { icon: '🏠', label: 'Inicio', path: '/profesor/dashboard' },
@@ -31,6 +33,7 @@ export default function TeacherCursos() {
   const {
     periodos, loading, cargarActividades,
     getActividades, agregarActividad, calificarEntrega,
+    editarActividad, eliminarActividad,
     setClave, getClave,
     agregarGrado, editarGrado, eliminarGrado,
     agregarMateria, editarMateria, eliminarMateria,
@@ -71,9 +74,23 @@ export default function TeacherCursos() {
 
   const [showModalAct, setShowModalAct] = useState(false)
   const [nuevaAct, setNuevaAct] = useState({ titulo: '', descripcion: '', fechaInicio: '', fechaLimite: '', contenidos: [], foroActivo: false, soloForo: false, foroTema: '', foroFechaLimite: '' })
+  const [editandoAct, setEditandoAct] = useState(null)
+  const [formEditAct, setFormEditAct] = useState({ titulo: '', descripcion: '', fechaInicio: '', fechaLimite: '' })
+  const [confirmDelAct, setConfirmDelAct] = useState(null)
   const [tipoSel, setTipoSel] = useState(null)
   const [contTemp, setContTemp] = useState({ texto: '', url: '', archivo: null })
   const [preguntas, setPreguntas] = useState([])
+  const [foros, setForos] = useState([])
+  const [loadingForos, setLoadingForos] = useState(false)
+  const [foroSel, setForoSel] = useState(null)
+  const [showModalForo, setShowModalForo] = useState(false)
+  const [editandoForo, setEditandoForo] = useState(null)
+  const [formForo, setFormForo] = useState({ titulo: '', descripcion: '', fechaLimite: '' })
+  const [confirmDelForo, setConfirmDelForo] = useState(null)
+  const [comentTemp, setComentTemp] = useState({})
+  const [confirmDelPub, setConfirmDelPub] = useState(null)
+  const [motivoDel, setMotivoDel] = useState('')
+
 
   const gradosDelPeriodo = periodoSel ? (periodos.find(p => p.id === periodoSel.id)?.grados || []) : []
   const gradoActual = gradoSel ? (gradosDelPeriodo.find(g => g.id === gradoSel.id) || gradoSel) : null
@@ -124,10 +141,35 @@ export default function TeacherCursos() {
   const seleccionarMateria = async (m) => {
     setMateriaSel(m); setLoadingActs(true)
     await cargarActividades(m.id)
+    cargarForos(m.id)
     setLoadingActs(false); setVista('actividades')
   }
 
-  const addContenido = () => {
+  const [subiendoCont, setSubiendoCont] = useState(false)
+
+  const [tipoSelEdit, setTipoSelEdit] = useState(null)
+  const [contTempEdit, setContTempEdit] = useState({ texto: '', url: '', archivo: null })
+  const [subiendoContEdit, setSubiendoContEdit] = useState(false)
+
+  const addContenidoEdit = async () => {
+    if (!tipoSelEdit) return
+    let c = { tipo: tipoSelEdit.id, label: tipoSelEdit.label, icon: tipoSelEdit.icon }
+    if (tipoSelEdit.id === 'explicacion') { if (!contTempEdit.texto) return; c = { ...c, texto: contTempEdit.texto } }
+    else if (['video_link', 'link'].includes(tipoSelEdit.id)) { if (!contTempEdit.url) return; c = { ...c, url: contTempEdit.url } }
+    else if (['archivo', 'video_propio', 'imagen'].includes(tipoSelEdit.id)) {
+      if (!contTempEdit.archivo) return
+      setSubiendoContEdit(true)
+      try {
+        const res = await subirContenido(contTempEdit.archivo, materiaSel.id)
+        c = { ...c, nombre: res.nombre, url: res.url }
+      } catch { setSubiendoContEdit(false); alert('Error subiendo el archivo'); return }
+      setSubiendoContEdit(false)
+    }
+    setFormEditAct(p => ({ ...p, contenidos: [...(p.contenidos || []), c] }))
+    setTipoSelEdit(null); setContTempEdit({ texto: '', url: '', archivo: null })
+  }
+
+  const addContenido = async () => {
     if (!tipoSel) return
     let c = { tipo: tipoSel.id, label: tipoSel.label, icon: tipoSel.icon }
     if (tipoSel.id === 'quiz') { if (!preguntas.length) return; c = { ...c, preguntas } }
@@ -135,12 +177,20 @@ export default function TeacherCursos() {
     else if (['video_link', 'link'].includes(tipoSel.id)) { if (!contTemp.url) return; c = { ...c, url: contTemp.url } }
     else if (['archivo', 'video_propio', 'imagen'].includes(tipoSel.id)) {
       if (!contTemp.archivo) return
-      c = { ...c, nombre: contTemp.archivo.name, url: URL.createObjectURL(contTemp.archivo) }
+      setSubiendoCont(true)
+      try {
+        const res = await subirContenido(contTemp.archivo, materiaSel.id)
+        c = { ...c, nombre: res.nombre, url: res.url }
+      } catch {
+        setSubiendoCont(false)
+        alert('Error subiendo el archivo')
+        return
+      }
+      setSubiendoCont(false)
     }
     setNuevaAct(p => ({ ...p, contenidos: [...p.contenidos, c] }))
     setTipoSel(null); setContTemp({ texto: '', url: '', archivo: null }); setPreguntas([])
   }
-
   const crearActividad = async () => {
     if (!nuevaAct.titulo || !nuevaAct.fechaLimite) return
     try {
@@ -148,6 +198,100 @@ export default function TeacherCursos() {
       setNuevaAct({ titulo: '', descripcion: '', fechaInicio: '', fechaLimite: '', contenidos: [], foroActivo: false, foroTema: '', foroFechaLimite: '' })
       setShowModalAct(false)
     } catch { alert('Error creando actividad') }
+  }
+  const fmtInput = iso => {
+    if (!iso) return ''
+    const d = new Date(iso)
+    const off = d.getTimezoneOffset()
+    const local = new Date(d.getTime() - off * 60000)
+    return local.toISOString().slice(0, 16)
+  }
+
+  const abrirEditarAct = (act, e) => {
+    e.stopPropagation()
+    setEditandoAct(act)
+    setFormEditAct({
+      titulo: act.titulo || '',
+      descripcion: act.descripcion || '',
+      fechaInicio: fmtInput(act.fechaInicio),
+      fechaLimite: fmtInput(act.fechaLimite),
+      contenidos: (act.contenidos || []).map(c => ({
+        tipo: c.tipo, label: c.label, icon: c.icono || c.icon || '📄',
+        texto: c.texto || null, url: c.url || null, nombre: c.nombre || null
+      })),
+    })
+  }
+
+  const guardarEditAct = async () => {
+    if (!formEditAct.titulo || !formEditAct.fechaLimite) return
+    try {
+      await editarActividad(materiaSel.id, editandoAct.id, formEditAct)
+      setEditandoAct(null)
+    } catch { alert('Error editando actividad') }
+  }
+
+  const confirmarEliminarAct = async () => {
+    try {
+      await eliminarActividad(materiaSel.id, confirmDelAct.id)
+      setConfirmDelAct(null)
+      if (vista === 'actividad_detalle') { setActividadSel(null); setVista('actividades') }
+    } catch { alert('Error eliminando actividad') }
+  }
+
+  const cargarForos = async (materiaId) => {
+    setLoadingForos(true)
+    try {
+      const res = await foroService.getForosMateria(materiaId)
+      setForos(res.data || [])
+    } catch { console.error('Error cargando foros') }
+    setLoadingForos(false)
+  }
+
+  const abrirNuevoForo = () => { setEditandoForo(null); setFormForo({ titulo: '', descripcion: '', fechaLimite: '' }); setShowModalForo(true) }
+  const abrirEditarForo = (f, e) => { e.stopPropagation(); setEditandoForo(f); setFormForo({ titulo: f.titulo, descripcion: f.descripcion || '', fechaLimite: f.fechaLimite ? f.fechaLimite.slice(0,10) : '' }); setShowModalForo(true) }
+
+  const guardarForo = async () => {
+    if (!formForo.titulo.trim()) return
+    try {
+      if (editandoForo) await foroService.editarForo(editandoForo.id, formForo)
+      else await foroService.crearForo({ ...formForo, materiaId: materiaSel.id })
+      setShowModalForo(false)
+      await cargarForos(materiaSel.id)
+    } catch { alert('Error guardando foro') }
+  }
+
+  const confirmarEliminarForo = async () => {
+    try {
+      await foroService.eliminarForo(confirmDelForo.id)
+      setConfirmDelForo(null)
+      if (vista === 'foro_detalle') { setForoSel(null); setVista('foros') }
+      await cargarForos(materiaSel.id)
+    } catch { alert('Error eliminando foro') }
+  }
+
+  const abrirForo = async (f) => {
+    setForoSel(f); setVista('foro_detalle')
+    await cargarForos(materiaSel.id)
+  }
+
+  const foroActual = foroSel ? (foros.find(f => f.id === foroSel.id) || foroSel) : null
+
+  const enviarComentario = async (pubId) => {
+    const texto = (comentTemp[pubId] || '').trim()
+    if (!texto) return
+    try {
+      await foroService.comentar(pubId, texto)
+      setComentTemp(p => ({ ...p, [pubId]: '' }))
+      await cargarForos(materiaSel.id)
+    } catch { alert('Error comentando') }
+  }
+
+  const confirmarEliminarPub = async () => {
+    try {
+      await foroService.eliminarPublicacion(confirmDelPub.id, motivoDel.trim() || null)
+      setConfirmDelPub(null); setMotivoDel('')
+      await cargarForos(materiaSel.id)
+    } catch { alert('Error eliminando publicacion') }
   }
 
   const guardarNota = async () => {
@@ -160,8 +304,9 @@ export default function TeacherCursos() {
   }
 
   const volver = () => {
-    const mapa = { calificar: 'actividad_detalle', actividad_detalle: 'actividades', actividades: 'materias', materias: 'grados', grados: 'periodos' }
+    const mapa = { calificar: 'actividad_detalle', actividad_detalle: 'actividades', foro_detalle: 'actividades', actividades: 'materias', materias: 'grados', grados: 'periodos' }
     if (vista === 'actividad_detalle') setTabActiva('contenido')
+    if (vista === 'foro_detalle') setForoSel(null)
     if (vista === 'actividades') setMateriaSel(null)
     if (vista === 'materias') setGradoSel(null)
     if (vista === 'grados') setPeriodoSel(null)
@@ -185,6 +330,7 @@ export default function TeacherCursos() {
     periodos: 'Mis Cursos', grados: (periodoSel?.nombre || '') + ' — Grados',
     materias: (gradoSel?.nombre || '') + ' — Materias', actividades: (materiaSel?.nombre || '') + ' — Actividades',
     actividad_detalle: actActual?.titulo || '', calificar: 'Calificar — ' + (estudianteSel?.nombre || ''),
+    foro_detalle: foroActual?.titulo || 'Foro',
   }
 
   return (
@@ -353,11 +499,38 @@ export default function TeacherCursos() {
             <div className="space-y-5">
               <div className="flex gap-3 flex-wrap">
                 <button onClick={() => setShowModalAct(true)} className="bg-purple-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-purple-700 text-sm shadow-md">+ Nueva Actividad</button>
+                <button onClick={abrirNuevoForo} className="bg-white border-2 border-purple-200 text-purple-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-purple-50 text-sm">💬 Publicar foro</button>
                 <button onClick={() => { setClaveMateria(materiaSel); setClaveInput(claveActual || ''); setShowModalClave(true) }}
                   className="bg-white border-2 border-purple-200 text-purple-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-purple-50 text-sm">
                   🔑 {claveActual ? 'Clave: ' + claveActual : 'Crear clave de matricula'}
                 </button>
               </div>
+
+              {foros.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Foros de discusión</p>
+                  {foros.map(f => (
+                    <div key={f.id} className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all group relative">
+                      <button onClick={() => abrirForo(f)} className="w-full text-left">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">💬</div>
+                          <div className="flex-1 min-w-0 pr-16">
+                            <h4 className="font-bold text-gray-800 mb-1">{f.titulo}</h4>
+                            {f.descripcion && <p className="text-xs text-gray-500 line-clamp-1">{f.descripcion}</p>}
+                            <p className="text-xs text-gray-400 mt-0.5">{(f.publicaciones?.length || 0) + ' participaciones'}</p>
+                          </div>
+                        </div>
+                      </button>
+                      <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => abrirEditarForo(f, e)} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-500 hover:text-purple-600 hover:bg-purple-50 shadow-sm text-sm border border-gray-100">✏️</button>
+                        <button onClick={(e) => { e.stopPropagation(); setConfirmDelForo(f) }} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-500 hover:text-red-600 hover:bg-red-50 shadow-sm text-sm border border-gray-100">🗑️</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Actividades</p>
               {loadingActs ? (
                 <div className="bg-white rounded-2xl p-14 text-center shadow-sm">
                   <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -375,20 +548,25 @@ export default function TeacherCursos() {
                     const tot = act.entregas?.length || 0
                     const pct = tot > 0 ? Math.round((ent / tot) * 100) : 0
                     return (
-                      <button key={act.id} onClick={() => { setActividadSel(act); setTabActiva('contenido'); setVista('actividad_detalle') }}
-                        className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all text-left group">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📝</div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-800 mb-1">{act.titulo}</h4>
-                            <p className="text-xs text-gray-400">{'⏰ ' + fmt(act.fechaLimite) + ' · ' + ent + '/' + tot + ' entregas'}</p>
-                            <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1.5">
-                              <div className={'h-1.5 rounded-full ' + (pct === 100 ? 'bg-green-500' : pct >= 70 ? 'bg-blue-500' : 'bg-yellow-500')} style={{ width: pct + '%' }} />
+                      <div key={act.id} className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all group relative">
+                        <button onClick={() => { setActividadSel(act); setTabActiva('contenido'); setVista('actividad_detalle') }} className="w-full text-left">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📝</div>
+                            <div className="flex-1 min-w-0 pr-16">
+                              <h4 className="font-bold text-gray-800 mb-1">{act.titulo}</h4>
+                              <p className="text-xs text-gray-400">{'⏰ ' + fmt(act.fechaLimite) + ' · ' + ent + '/' + tot + ' entregas'}</p>
+                              <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1.5">
+                                <div className={'h-1.5 rounded-full ' + (pct === 100 ? 'bg-green-500' : pct >= 70 ? 'bg-blue-500' : 'bg-yellow-500')} style={{ width: pct + '%' }} />
+                              </div>
                             </div>
+                            <span className={'text-sm font-bold ' + (pct === 100 ? 'text-green-600' : pct >= 70 ? 'text-blue-600' : 'text-yellow-600')}>{pct}%</span>
                           </div>
-                          <span className={'text-sm font-bold ' + (pct === 100 ? 'text-green-600' : pct >= 70 ? 'text-blue-600' : 'text-yellow-600')}>{pct}%</span>
+                        </button>
+                        <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={(e) => abrirEditarAct(act, e)} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-500 hover:text-purple-600 hover:bg-purple-50 shadow-sm text-sm border border-gray-100">✏️</button>
+                          <button onClick={(e) => { e.stopPropagation(); setConfirmDelAct(act) }} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-500 hover:text-red-600 hover:bg-red-50 shadow-sm text-sm border border-gray-100">🗑️</button>
                         </div>
-                      </button>
+                      </div>
                     )
                   })}
                 </div>
@@ -458,9 +636,12 @@ export default function TeacherCursos() {
                             </div>
                           </td>
                           <td className="py-3.5 px-5 text-center">
-                            <span className={'text-xs px-3 py-1 rounded-full font-semibold ' + (ent.entregado ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700')}>
-                              {ent.entregado ? 'Entregado' : 'Pendiente'}
-                            </span>
+                            {(() => {
+                              const vencio = new Date(actActual.fechaLimite) < new Date()
+                              if (ent.entregado) return <span className="text-xs px-3 py-1 rounded-full font-semibold bg-green-100 text-green-700">Entregado</span>
+                              if (vencio) return <span className="text-xs px-3 py-1 rounded-full font-semibold bg-red-100 text-red-700">No entregó</span>
+                              return <span className="text-xs px-3 py-1 rounded-full font-semibold bg-orange-100 text-orange-700">Pendiente</span>
+                            })()}
                           </td>
                           <td className="py-3.5 px-5 text-center">
                             {ent.calificacion != null
@@ -510,6 +691,75 @@ export default function TeacherCursos() {
                   <button onClick={guardarNota} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-md">Guardar Calificacion</button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* DETALLE FORO */}
+          {vista === 'foro_detalle' && foroActual && (
+            <div className="space-y-5">
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <span className="text-3xl">💬</span>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800 text-lg mb-1">{foroActual.titulo}</h3>
+                    {foroActual.descripcion && <p className="text-gray-500 text-sm">{foroActual.descripcion}</p>}
+                    {foroActual.fechaLimite && <p className="text-xs text-gray-400 mt-2">{'⏰ Cierra: ' + fmt(foroActual.fechaLimite)}</p>}
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">
+                Participaciones ({foroActual.publicaciones?.length || 0})
+              </p>
+
+              {!foroActual.publicaciones?.length ? (
+                <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
+                  <span className="text-5xl">💭</span>
+                  <p className="text-gray-500 mt-3 font-semibold">Aún no hay participaciones</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {foroActual.publicaciones.map(pub => (
+                    <div key={pub.id} className="bg-white rounded-2xl p-5 shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold text-sm flex-shrink-0">
+                          {pub.estudiante?.nombre?.charAt(0) || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-gray-800 text-sm">{pub.estudiante?.nombre || 'Estudiante'}</p>
+                            <button onClick={() => setConfirmDelPub(pub)} className="text-red-400 hover:text-red-600 text-sm flex-shrink-0">🗑️</button>
+                          </div>
+                          <p className="text-gray-700 text-sm mt-1 whitespace-pre-wrap">{pub.texto}</p>
+                          <p className="text-xs text-gray-400 mt-1">{fmt(pub.createdAt)}</p>
+
+                          {pub.comentarios?.length > 0 && (
+                            <div className="mt-3 space-y-2 pl-4 border-l-2 border-gray-100">
+                              {pub.comentarios.map(com => (
+                                <div key={com.id} className="bg-slate-50 rounded-lg p-3">
+                                  <p className="text-xs font-semibold text-gray-700">{com.autorNombre}</p>
+                                  <p className="text-sm text-gray-600 mt-0.5 whitespace-pre-wrap">{com.texto}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 mt-3">
+                            <input
+                              value={comentTemp[pub.id] || ''}
+                              onChange={e => setComentTemp(p => ({ ...p, [pub.id]: e.target.value }))}
+                              placeholder="Responder..."
+                              className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                              onKeyDown={e => { if (e.key === 'Enter') enviarComentario(pub.id) }}
+                            />
+                            <button onClick={() => enviarComentario(pub.id)} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700">Enviar</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -621,22 +871,6 @@ export default function TeacherCursos() {
                 <div><label className={lbl}>Fecha inicio</label><input type="datetime-local" value={nuevaAct.fechaInicio} onChange={e => setNuevaAct(p => ({ ...p, fechaInicio: e.target.value }))} className={inp} /></div>
                 <div><label className={lbl}>Fecha limite *</label><input type="datetime-local" value={nuevaAct.fechaLimite} onChange={e => setNuevaAct(p => ({ ...p, fechaLimite: e.target.value }))} className={inp} /></div>
               </div>
-              <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="checkbox" checked={nuevaAct.foroActivo} onChange={e => setNuevaAct(p => ({ ...p, foroActivo: e.target.checked, soloForo: e.target.checked ? p.soloForo : false }))} className="w-4 h-4 accent-purple-600" />
-                  <span className="font-semibold text-gray-700 text-sm">💬 Activar foro de discusion</span>
-                </label>
-                {nuevaAct.foroActivo && (
-                  <div className="mt-3 space-y-2">
-                    <input value={nuevaAct.foroTema} onChange={e => setNuevaAct(p => ({ ...p, foroTema: e.target.value }))} placeholder="Tema del foro" className={inp + ' bg-white'} />
-                    <input type="date" value={nuevaAct.foroFechaLimite} onChange={e => setNuevaAct(p => ({ ...p, foroFechaLimite: e.target.value }))} className={inp + ' bg-white'} />
-                    <label className="flex items-center gap-3 cursor-pointer bg-white rounded-xl p-3 border border-purple-100">
-                      <input type="checkbox" checked={nuevaAct.soloForo} onChange={e => setNuevaAct(p => ({ ...p, soloForo: e.target.checked }))} className="w-4 h-4 accent-purple-600" />
-                      <span className="text-gray-700 text-sm">📌 Esta actividad es <span className="font-semibold">solo participar en el foro</span> (sin entrega de archivo)</span>
-                    </label>
-                  </div>
-                )}
-              </div>
               {nuevaAct.contenidos.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-gray-700">Contenidos ({nuevaAct.contenidos.length})</p>
@@ -679,7 +913,7 @@ export default function TeacherCursos() {
                     {tipoSel.id === 'explicacion' && (
                       <textarea value={contTemp.texto} onChange={e => setContTemp(p => ({ ...p, texto: e.target.value }))} rows={4} placeholder="Escribe las instrucciones..." className={inp + ' resize-none bg-white'} />
                     )}
-                    <button onClick={addContenido} className="w-full bg-purple-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-purple-700">✅ Agregar</button>
+                    <button onClick={addContenido} disabled={subiendoCont} className="w-full bg-purple-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-purple-700 disabled:opacity-50">{subiendoCont ? '⏳ Subiendo...' : '✅ Agregar'}</button>
                   </div>
                 )}
               </div>
@@ -689,6 +923,147 @@ export default function TeacherCursos() {
                 className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 text-sm">Cancelar</button>
               <button onClick={crearActividad} disabled={!nuevaAct.titulo || !nuevaAct.fechaLimite}
                 className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md disabled:opacity-40 text-sm">Crear Actividad</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDITAR ACTIVIDAD */}
+      {editandoAct && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="px-7 py-5 border-b border-gray-100 flex-shrink-0">
+              <h3 className="font-black text-gray-900 text-lg">Editar Actividad</h3>
+              <p className="text-gray-400 text-sm">{materiaSel?.nombre}</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-7 space-y-4">
+              <div><label className={lbl}>Titulo *</label><input value={formEditAct.titulo} onChange={e => setFormEditAct(p => ({ ...p, titulo: e.target.value }))} placeholder="Titulo de la actividad" className={inp} autoFocus /></div>
+              <div><label className={lbl}>Descripcion</label><textarea value={formEditAct.descripcion} onChange={e => setFormEditAct(p => ({ ...p, descripcion: e.target.value }))} rows={3} placeholder="Instrucciones..." className={inp + ' resize-none'} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={lbl}>Fecha inicio</label><input type="datetime-local" value={formEditAct.fechaInicio} onChange={e => setFormEditAct(p => ({ ...p, fechaInicio: e.target.value }))} className={inp} /></div>
+                <div><label className={lbl}>Fecha limite *</label><input type="datetime-local" value={formEditAct.fechaLimite} onChange={e => setFormEditAct(p => ({ ...p, fechaLimite: e.target.value }))} className={inp} /></div>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Contenidos</p>
+                {(formEditAct.contenidos || []).length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {formEditAct.contenidos.map((c, i) => (
+                      <div key={i} className="flex items-center gap-3 bg-slate-50 rounded-xl p-3">
+                        <span>{c.icon || c.icono || '📄'}</span>
+                        <span className="text-sm text-gray-700 flex-1 min-w-0 truncate">{c.label}{c.nombre ? ' — ' + c.nombre : ''}</span>
+                        <button onClick={() => setFormEditAct(p => ({ ...p, contenidos: p.contenidos.filter((_, j) => j !== i) }))} className="text-red-400 hover:text-red-600 flex-shrink-0">✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!tipoSelEdit ? (
+                  <div className="grid grid-cols-4 gap-2">
+                    {TIPOS_CONTENIDO.filter(t => t.id !== 'quiz').map(t => (
+                      <button key={t.id} onClick={() => setTipoSelEdit(t)} className="bg-slate-50 hover:bg-purple-50 rounded-xl p-3 text-center transition-all border-2 border-transparent hover:border-purple-200">
+                        <div className="text-2xl mb-1">{t.icon}</div>
+                        <p className="text-xs font-semibold text-gray-700">{t.label}</p>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-slate-50 rounded-xl p-5 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{tipoSelEdit.icon}</span>
+                      <span className="font-semibold text-gray-800 text-sm">{tipoSelEdit.label}</span>
+                      <button onClick={() => { setTipoSelEdit(null); setContTempEdit({ texto: '', url: '', archivo: null }) }} className="ml-auto text-gray-400 hover:text-gray-600 text-sm">✕ Cancelar</button>
+                    </div>
+                    {['archivo', 'video_propio', 'imagen'].includes(tipoSelEdit.id) && (
+                      <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-purple-400" onClick={() => document.getElementById('fileInputEdit').click()}>
+                        <input id="fileInputEdit" type="file" className="hidden" accept={tipoSelEdit.accept} onChange={e => setContTempEdit(p => ({ ...p, archivo: e.target.files[0] }))} />
+                        {contTempEdit.archivo ? <p className="text-purple-600 font-semibold text-sm">{'✅ ' + contTempEdit.archivo.name}</p> : <p className="text-gray-500 text-sm">Haz clic para seleccionar</p>}
+                      </div>
+                    )}
+                    {['video_link', 'link'].includes(tipoSelEdit.id) && (
+                      <input type="url" value={contTempEdit.url} onChange={e => setContTempEdit(p => ({ ...p, url: e.target.value }))} placeholder="https://..." className={inp + ' bg-white'} />
+                    )}
+                    {tipoSelEdit.id === 'explicacion' && (
+                      <textarea value={contTempEdit.texto} onChange={e => setContTempEdit(p => ({ ...p, texto: e.target.value }))} rows={4} placeholder="Escribe las instrucciones..." className={inp + ' resize-none bg-white'} />
+                    )}
+                    <button onClick={addContenidoEdit} disabled={subiendoContEdit} className="w-full bg-purple-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-purple-700 disabled:opacity-50">{subiendoContEdit ? '⏳ Subiendo...' : '✅ Agregar'}</button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="px-7 py-5 border-t border-gray-100 flex gap-3 flex-shrink-0">
+              <button onClick={() => setEditandoAct(null)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 text-sm">Cancelar</button>
+              <button onClick={guardarEditAct} disabled={!formEditAct.titulo || !formEditAct.fechaLimite} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md text-sm disabled:opacity-40">Guardar cambios</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CREAR/EDITAR FORO */}
+      {showModalForo && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl">
+            <div className="px-7 py-5 border-b border-gray-100">
+              <h3 className="font-black text-gray-900 text-lg">{editandoForo ? 'Editar foro' : 'Publicar foro'}</h3>
+              <p className="text-gray-400 text-sm">{materiaSel?.nombre}</p>
+            </div>
+            <div className="p-7 space-y-4">
+              <div><label className={lbl}>Tema del foro *</label><input value={formForo.titulo} onChange={e => setFormForo(p => ({ ...p, titulo: e.target.value }))} placeholder="Ej: Debate sobre el cambio climatico" className={inp} autoFocus /></div>
+              <div><label className={lbl}>Descripcion / consigna</label><textarea value={formForo.descripcion} onChange={e => setFormForo(p => ({ ...p, descripcion: e.target.value }))} rows={3} placeholder="Explica de que trata el foro y que deben responder..." className={inp + ' resize-none'} /></div>
+              <div><label className={lbl}>Fecha limite (opcional)</label><input type="date" value={formForo.fechaLimite} onChange={e => setFormForo(p => ({ ...p, fechaLimite: e.target.value }))} className={inp} /></div>
+            </div>
+            <div className="px-7 py-5 border-t border-gray-100 flex gap-3">
+              <button onClick={() => setShowModalForo(false)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 text-sm">Cancelar</button>
+              <button onClick={guardarForo} disabled={!formForo.titulo.trim()} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md text-sm disabled:opacity-40">{editandoForo ? 'Guardar cambios' : 'Publicar foro'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMAR ELIMINAR FORO */}
+      {confirmDelForo && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+            <span className="text-5xl">⚠️</span>
+            <h3 className="font-black text-gray-900 text-xl mt-3 mb-2">Eliminar foro</h3>
+            <p className="text-gray-500 text-sm mb-6">Vas a eliminar <span className="font-bold text-gray-800">{confirmDelForo.titulo}</span>. Se borrarán todas las participaciones y comentarios. Esta accion no se puede deshacer.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDelForo(null)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 text-sm">Cancelar</button>
+              <button onClick={confirmarEliminarForo} className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 shadow-md text-sm">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMAR ELIMINAR PUBLICACION */}
+      {confirmDelPub && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl">
+            <div className="text-center">
+              <span className="text-5xl">⚠️</span>
+              <h3 className="font-black text-gray-900 text-xl mt-3 mb-2">Eliminar participación</h3>
+              <p className="text-gray-500 text-sm mb-4">Vas a eliminar la participación de <span className="font-bold text-gray-800">{confirmDelPub.estudiante?.nombre || 'el estudiante'}</span>. Se le notificará para que pueda volver a participar.</p>
+            </div>
+            <div className="mb-4">
+              <label className={lbl}>Motivo (opcional)</label>
+              <input value={motivoDel} onChange={e => setMotivoDel(e.target.value)} placeholder="Ej: lenguaje inapropiado" className={inp} />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => { setConfirmDelPub(null); setMotivoDel('') }} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 text-sm">Cancelar</button>
+              <button onClick={confirmarEliminarPub} className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 shadow-md text-sm">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMAR ELIMINAR ACTIVIDAD */}
+      {confirmDelAct && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+            <span className="text-5xl">⚠️</span>
+            <h3 className="font-black text-gray-900 text-xl mt-3 mb-2">Eliminar actividad</h3>
+            <p className="text-gray-500 text-sm mb-6">Vas a eliminar <span className="font-bold text-gray-800">{confirmDelAct.titulo}</span>. Se borraran tambien sus entregas, calificaciones y foro. Esta accion no se puede deshacer.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDelAct(null)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 text-sm">Cancelar</button>
+              <button onClick={confirmarEliminarAct} className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 shadow-md text-sm">Eliminar</button>
             </div>
           </div>
         </div>

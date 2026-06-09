@@ -6,6 +6,7 @@ const {
   crearMateria, editarMateria, eliminarMateria, setCodigo,
   inscribirseConCodigo, getMiEstructura, getMisInscripciones,
   crearActividad, getActividades, entregarActividad, calificarEntrega,
+  editarActividad, eliminarActividad,
   getEstadisticas, responderForo,
 } = require('../controllers/academicController')
 const { verificarToken, soloProfesor, soloEstudiante } = require('../middlewares/authMiddleware')
@@ -33,6 +34,8 @@ router.post('/inscribirse',            verificarToken, soloEstudiante, inscribir
 router.get('/mis-inscripciones',       verificarToken, soloEstudiante, getMisInscripciones)
 
 router.post('/actividades', verificarToken, soloProfesor, crearActividad)
+router.put('/actividades/:id', verificarToken, soloProfesor, editarActividad)
+router.delete('/actividades/:id', verificarToken, soloProfesor, eliminarActividad)
 router.get('/materias/:materiaId/actividades', verificarToken, getActividades)
 router.post('/actividades/:actividadId/entregar', verificarToken, soloEstudiante, entregarActividad)
 router.post('/actividades/:actividadId/foro', verificarToken, soloEstudiante, responderForo)

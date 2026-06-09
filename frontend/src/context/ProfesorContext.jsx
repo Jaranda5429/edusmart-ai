@@ -192,6 +192,32 @@ export const ProfesorProvider = ({ children }) => {
     }
   }
 
+  const editarActividad = async (materiaId, actividadId, datos) => {
+    try {
+      await academicService.editarActividad(actividadId, {
+        titulo: datos.titulo,
+        descripcion: datos.descripcion || null,
+        fechaInicio: datos.fechaInicio || null,
+        fechaLimite: datos.fechaLimite,
+        contenidos: datos.contenidos || undefined,
+      })
+      await cargarActividades(materiaId)
+    } catch (err) {
+      console.error('Error editando actividad:', err)
+      throw err
+    }
+  }
+
+  const eliminarActividad = async (materiaId, actividadId) => {
+    try {
+      await academicService.eliminarActividad(actividadId)
+      await cargarActividades(materiaId)
+    } catch (err) {
+      console.error('Error eliminando actividad:', err)
+      throw err
+    }
+  }
+
   const calificarEntrega = async (periodoId, gradoId, materiaId, actividadId, estudianteId, calificacion) => {
     try {
       await academicService.calificarEntrega(actividadId, estudianteId, calificacion)
@@ -292,6 +318,7 @@ localStorage.setItem('inscripciones_norm', JSON.stringify(normalized))
       setClave, getClave,
       // Actividades
       getActividades, agregarActividad, calificarEntrega,
+      editarActividad, eliminarActividad,
       // Matricula
       matricularConClave,
       // Inscripciones estudiante

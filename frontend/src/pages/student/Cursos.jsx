@@ -1,7 +1,7 @@
 import { useState, useEffect} from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useProfesor } from '../../context/ProfesorContext'
-import { academicService } from '../../services/api'
+import { academicService, foroService } from '../../services/api'
 import Layout from '../../components/Layout'
 import { subirArchivo } from '../../services/supabase'
 import { useSearchParams } from 'react-router-dom'
@@ -42,6 +42,12 @@ export default function StudentCursos() {
   const [entregaEnviada, setEntregaEnviada] = useState(false)
   const [respForo, setRespForo] = useState('')
   const [foroEnviado, setForoEnviado] = useState(false)
+  const [foros, setForos] = useState([])
+  const [foroSel, setForoSel] = useState(null)
+  const [pubTexto, setPubTexto] = useState('')
+  const [editPubId, setEditPubId] = useState(null)
+  const [editPubTexto, setEditPubTexto] = useState('')
+  const [comentTemp, setComentTemp] = useState({})
 
   const [searchParams] = useSearchParams()
   const searchQuery = searchParams.get('q')?.toLowerCase() || ''
@@ -59,6 +65,7 @@ export default function StudentCursos() {
     try {
       const res = await academicService.getActividades(insc.materiaId)
       setActividades(res.data || [])
+      cargarForos(insc.materiaId)
     } catch (err) {
       console.error('Error cargando actividades:', err)
       setActividades([])
@@ -66,6 +73,49 @@ export default function StudentCursos() {
       setLoadingActs(false)
     }
     setVista('actividades')
+  }
+
+  const cargarForos = async (materiaId) => {
+    try {
+      const res = await foroService.getForosMateria(materiaId)
+      setForos(res.data || [])
+    } catch { console.error('Error cargando foros') }
+  }
+
+  const foroActual = foroSel ? (foros.find(f => f.id === foroSel.id) || foroSel) : null
+
+  const abrirForo = async (f) => {
+    setForoSel(f)
+    if (inscSel) await cargarForos(inscSel.materiaId)
+    setVista('foro')
+  }
+
+  const publicarEnForo = async () => {
+    if (!pubTexto.trim()) return
+    try {
+      await foroService.publicar(foroSel.id, pubTexto.trim())
+      setPubTexto('')
+      await cargarForos(inscSel.materiaId)
+    } catch { alert('Error publicando') }
+  }
+
+  const guardarEditPub = async (pubId) => {
+    if (!editPubTexto.trim()) return
+    try {
+      await foroService.editarPublicacion(pubId, editPubTexto.trim())
+      setEditPubId(null); setEditPubTexto('')
+      await cargarForos(inscSel.materiaId)
+    } catch { alert('Error editando') }
+  }
+
+  const enviarComentario = async (pubId) => {
+    const texto = (comentTemp[pubId] || '').trim()
+    if (!texto) return
+    try {
+      await foroService.comentar(pubId, texto)
+      setComentTemp(p => ({ ...p, [pubId]: '' }))
+      await cargarForos(inscSel.materiaId)
+    } catch { alert('Error comentando') }
   }
 
   const miId = usuario?.id
@@ -90,9 +140,13 @@ export default function StudentCursos() {
       setForoEnviado(false)
       setRespForo('')
       setVista('actividades')
+    } else if (vista === 'foro') {
+      setForoSel(null)
+      setVista('actividades')
     } else if (vista === 'actividades') {
       setInscSel(null)
       setActividades([])
+      setForos([])
       setVista('inscripciones')
     }
   }
@@ -164,7 +218,7 @@ export default function StudentCursos() {
             )}
             <div>
               <h2 className="text-xl font-black text-gray-900">
-                <span>{vista === 'inscripciones' ? 'Mis Cursos' : vista === 'actividades' ? (inscSel?.materiaName || '') : (actActual?.titulo || '')}</span>
+                <span>{vista === 'inscripciones' ? 'Mis Cursos' : vista === 'actividades' ? (inscSel?.materiaName || '') : vista === 'foro' ? (foroActual?.titulo || 'Foro') : (actActual?.titulo || '')}</span>
               </h2>
               <p className="text-gray-400 text-xs">
                 <span>
@@ -283,6 +337,26 @@ export default function StudentCursos() {
                   </button>
                 )
               })}
+
+              {foros.length > 0 && (
+                <div className="pt-4 space-y-3">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Foros de discusión</p>
+                  {foros.map(f => (
+                    <button key={f.id} onClick={() => abrirForo(f)}
+                      className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all text-left group">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">💬</div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-gray-800">{f.titulo}</h4>
+                          {f.descripcion && <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{f.descripcion}</p>}
+                          <p className="text-xs text-gray-400 mt-0.5">{(f.publicaciones?.length || 0) + ' participaciones'}</p>
+                        </div>
+                        <span className="text-gray-300 group-hover:text-purple-400 text-lg">→</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )
         )}
@@ -464,6 +538,109 @@ export default function StudentCursos() {
             )}
           </div>
         )}
+
+        {/* DETALLE FORO INDEPENDIENTE */}
+        {vista === 'foro' && foroActual && (() => {
+          const miPub = (foroActual.publicaciones || []).find(p => p.estudianteId === miId)
+          const otras = (foroActual.publicaciones || []).filter(p => p.estudianteId !== miId)
+          return (
+            <div className="space-y-5 max-w-3xl">
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <span className="text-3xl">💬</span>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800 text-lg mb-1">{foroActual.titulo}</h3>
+                    {foroActual.descripcion && <p className="text-gray-500 text-sm">{foroActual.descripcion}</p>}
+                    {foroActual.fechaLimite && <p className="text-xs text-gray-400 mt-2">{'⏰ Cierra: ' + fmt(foroActual.fechaLimite)}</p>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Mi participacion */}
+              {miPub ? (
+                <div className="bg-green-50 rounded-2xl p-5 border border-green-200">
+                  {editPubId === miPub.id ? (
+                    <div className="space-y-3">
+                      <textarea value={editPubTexto} onChange={e => setEditPubTexto(e.target.value)} rows={4} className={inp + ' bg-white'} />
+                      <div className="flex gap-2">
+                        <button onClick={() => { setEditPubId(null); setEditPubTexto('') }} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">Cancelar</button>
+                        <button onClick={() => guardarEditPub(miPub.id)} className="flex-1 bg-purple-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-purple-700">Guardar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-semibold text-green-700 text-sm">✅ Tu participación:</p>
+                        <button onClick={() => { setEditPubId(miPub.id); setEditPubTexto(miPub.texto) }} className="text-purple-600 text-xs font-semibold hover:underline">✏️ Editar</button>
+                      </div>
+                      <p className="text-gray-700 text-sm whitespace-pre-wrap">{miPub.texto}</p>
+                      {miPub.comentarios?.length > 0 && (
+                        <div className="mt-3 space-y-2 pl-4 border-l-2 border-green-200">
+                          {miPub.comentarios.map(com => (
+                            <div key={com.id} className="bg-white rounded-lg p-3 border border-gray-100">
+                              <p className="text-xs font-semibold text-gray-700">{com.autorNombre}</p>
+                              <p className="text-sm text-gray-600 mt-0.5 whitespace-pre-wrap">{com.texto}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
+                  <h3 className="font-bold text-gray-800 text-sm">Tu participación</h3>
+                  <textarea value={pubTexto} onChange={e => setPubTexto(e.target.value)} placeholder="Escribe tu participación..." rows={4} className={inp} />
+                  <button onClick={publicarEnForo} disabled={!pubTexto.trim()} className="w-full bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-md disabled:opacity-40">💬 Publicar</button>
+                </div>
+              )}
+
+              {/* Participaciones de otros */}
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Participaciones de compañeros ({otras.length})</p>
+              {otras.length === 0 ? (
+                <div className="bg-white rounded-2xl p-10 text-center shadow-sm">
+                  <span className="text-4xl">💭</span>
+                  <p className="text-gray-500 mt-2 text-sm">Aún no hay otras participaciones</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {otras.map(pub => (
+                    <div key={pub.id} className="bg-white rounded-2xl p-5 shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold text-sm flex-shrink-0">
+                          {pub.estudiante?.nombre?.charAt(0) || '?'}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-800 text-sm">{pub.estudiante?.nombre || 'Estudiante'}</p>
+                          <p className="text-gray-700 text-sm mt-1 whitespace-pre-wrap">{pub.texto}</p>
+                          <p className="text-xs text-gray-400 mt-1">{fmt(pub.createdAt)}</p>
+
+                          {pub.comentarios?.length > 0 && (
+                            <div className="mt-3 space-y-2 pl-4 border-l-2 border-gray-100">
+                              {pub.comentarios.map(com => (
+                                <div key={com.id} className="bg-slate-50 rounded-lg p-3">
+                                  <p className="text-xs font-semibold text-gray-700">{com.autorNombre}</p>
+                                  <p className="text-sm text-gray-600 mt-0.5 whitespace-pre-wrap">{com.texto}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 mt-3">
+                            <input value={comentTemp[pub.id] || ''} onChange={e => setComentTemp(p => ({ ...p, [pub.id]: e.target.value }))}
+                              placeholder="Responder..." className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                              onKeyDown={e => { if (e.key === 'Enter') enviarComentario(pub.id) }} />
+                            <button onClick={() => enviarComentario(pub.id)} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700">Enviar</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })()}
       </div>
     </Layout>
   )

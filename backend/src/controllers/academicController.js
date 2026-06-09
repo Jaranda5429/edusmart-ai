@@ -525,12 +525,79 @@ const responderForo = async (req, res) => {
   }
 }
 
+const editarActividad = async (req, res) => {
+  try {
+    const { id } = req.params
+    const { titulo, descripcion, fechaInicio, fechaLimite, contenidos } = req.body
+
+    const actividad = await prisma.actividad.findUnique({
+      where: { id: parseInt(id) },
+      include: { materia: { include: { grado: { include: { periodo: true } } } } }
+    })
+    if (!actividad) return res.status(404).json({ message: 'Actividad no encontrada' })
+    if (actividad.materia.grado.periodo.profesorId !== req.usuario.id) return res.status(403).json({ message: 'Sin permiso' })
+
+    const data = {}
+    if (titulo !== undefined) data.titulo = titulo
+    if (descripcion !== undefined) data.descripcion = descripcion || null
+    if (fechaInicio !== undefined) data.fechaInicio = fechaInicio ? new Date(fechaInicio) : null
+    if (fechaLimite !== undefined) data.fechaLimite = new Date(fechaLimite)
+
+    await prisma.actividad.update({ where: { id: parseInt(id) }, data })
+
+    // Sincronizar contenidos: borrar los viejos y crear los nuevos
+    if (Array.isArray(contenidos)) {
+      await prisma.contenido.deleteMany({ where: { actividadId: parseInt(id) } })
+      if (contenidos.length > 0) {
+        await prisma.contenido.createMany({
+          data: contenidos.map(c => ({
+            tipo: c.tipo,
+            label: c.label,
+            icono: c.icon || c.icono || '📄',
+            texto: c.texto || null,
+            url: c.url || null,
+            nombre: c.nombre || null,
+            actividadId: parseInt(id)
+          }))
+        })
+      }
+    }
+
+    const actualizada = await prisma.actividad.findUnique({
+      where: { id: parseInt(id) },
+      include: { contenidos: true }
+    })
+    res.json({ message: 'Actividad actualizada', actividad: actualizada })
+  } catch (err) {
+    console.error('ERROR EDITAR ACTIVIDAD:', err)
+    res.status(500).json({ message: 'Error editando actividad', error: err.message })
+  }
+}
+
+const eliminarActividad = async (req, res) => {
+  try {
+    const { id } = req.params
+    const actividad = await prisma.actividad.findUnique({
+      where: { id: parseInt(id) },
+      include: { materia: { include: { grado: { include: { periodo: true } } } } }
+    })
+    if (!actividad) return res.status(404).json({ message: 'Actividad no encontrada' })
+    if (actividad.materia.grado.periodo.profesorId !== req.usuario.id) return res.status(403).json({ message: 'Sin permiso' })
+
+    await prisma.actividad.delete({ where: { id: parseInt(id) } })
+    res.json({ message: 'Actividad eliminada' })
+  } catch (err) {
+    console.error('ERROR ELIMINAR ACTIVIDAD:', err)
+    res.status(500).json({ message: 'Error eliminando actividad', error: err.message })
+  }
+} 
 module.exports = {
   getPeriodos, crearPeriodo, editarPeriodo, eliminarPeriodo,
   crearGrado, editarGrado, eliminarGrado,
   crearMateria, editarMateria, eliminarMateria, setCodigo,
   inscribirseConCodigo, getMiEstructura, getMisInscripciones,
   crearActividad, getActividades, entregarActividad, calificarEntrega,
-  crearActividad, getActividades, entregarActividad, calificarEntrega, 
+  crearActividad, getActividades, entregarActividad, calificarEntrega,
+  editarActividad, eliminarActividad,
   getEstadisticas, responderForo,
 }

@@ -60,6 +60,8 @@ export const academicService = {
 
   // Profesor - Actividades
   crearActividad: (data) => api.post('/academic/actividades', data),
+  editarActividad: (id, data) => api.put('/academic/actividades/' + id, data),
+  eliminarActividad: (id) => api.delete('/academic/actividades/' + id),
   getActividades: (materiaId) => api.get('/academic/materias/' + materiaId + '/actividades'),
   calificarEntrega: (actividadId, estudianteId, calificacion) => api.put('/academic/actividades/' + actividadId + '/calificar/' + estudianteId, { calificacion }),
 
@@ -83,6 +85,20 @@ export const iaService = {
 export const cursoService = {
   misCursos: () => api.get('/academic/estructura'),
   cursosInscritos: () => api.get('/academic/mis-inscripciones'),
+}
+
+// ── Foro ──────────────────────────────────────────────────────────────────
+export const foroService = {
+  crearForo: (data) => api.post('/foros', data),
+  getForosMateria: (materiaId) => api.get('/foros/materia/' + materiaId),
+  editarForo: (id, data) => api.put('/foros/' + id, data),
+  eliminarForo: (id) => api.delete('/foros/' + id),
+  publicar: (foroTemaId, texto) => api.post('/foros/' + foroTemaId + '/publicar', { texto }),
+  editarPublicacion: (id, texto) => api.put('/foros/publicacion/' + id, { texto }),
+  eliminarPublicacion: (id, motivo) => api.delete('/foros/publicacion/' + id, { data: { motivo } }),
+  comentar: (publicacionId, texto) => api.post('/foros/publicacion/' + publicacionId + '/comentar', { texto }),
+  getNotificaciones: () => api.get('/foros/notificaciones/mias'),
+  marcarNotiLeida: (id) => api.put('/foros/notificaciones/' + id + '/leida'),
 }
 
 export default api

@@ -21,3 +21,20 @@ export const subirArchivo = async (archivo, estudianteId, actividadId) => {
 
   return { url: urlData.publicUrl, nombre: archivo.name }
 }
+
+export const subirContenido = async (archivo, materiaId) => {
+  const ext = archivo.name.split('.').pop()
+  const path = 'contenidos/' + materiaId + '/' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + '.' + ext
+
+  const { data, error } = await supabase.storage
+    .from('entregas')
+    .upload(path, archivo, { upsert: true })
+
+  if (error) throw error
+
+  const { data: urlData } = supabase.storage
+    .from('entregas')
+    .getPublicUrl(path)
+
+  return { url: urlData.publicUrl, nombre: archivo.name }
+}
