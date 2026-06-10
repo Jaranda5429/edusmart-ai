@@ -138,11 +138,13 @@ export default function StudentNotificaciones() {
     // Ordenar por fecha más reciente
     // Agregar notificaciones de la base de datos (ej: foro eliminado)
     notisBD.forEach(n => {
+      const iconos = { foro_eliminado: '🗑️', quiz_nuevo: '❓', foro_nuevo: '💬' }
+      const colores = { foro_eliminado: 'red', quiz_nuevo: 'purple', foro_nuevo: 'purple' }
       lista.push({
         id: 'bd-' + n.id,
         tipo: n.tipo,
-        icono: n.tipo === 'foro_eliminado' ? '🗑️' : '🔔',
-        color: 'red',
+        icono: iconos[n.tipo] || '🔔',
+        color: colores[n.tipo] || 'red',
         titulo: n.titulo,
         mensaje: n.mensaje,
         fecha: n.createdAt,

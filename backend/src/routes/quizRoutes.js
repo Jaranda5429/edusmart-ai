@@ -1,18 +1,11 @@
 const express = require('express')
 const router = express.Router()
-const {
-  crearQuiz,
-  obtenerQuizzesPorCurso,
-  obtenerQuizPorId,
-  responderQuiz,
-  obtenerResultadosQuiz
-} = require('../controllers/quizController')
-const { verificarToken, soloProfesor, soloEstudiante } = require('../middlewares/authMiddleware')
+const { crearQuiz, getQuizzesMateria, eliminarQuiz, responderQuiz } = require('../controllers/quizController')
+const { verificarToken, soloProfesor } = require('../middlewares/authMiddleware')
 
+router.get('/materia/:materiaId', verificarToken, getQuizzesMateria)
 router.post('/', verificarToken, soloProfesor, crearQuiz)
-router.get('/curso/:cursoId', verificarToken, obtenerQuizzesPorCurso)
-router.get('/:id', verificarToken, obtenerQuizPorId)
-router.post('/:id/responder', verificarToken, soloEstudiante, responderQuiz)
-router.get('/:id/resultados', verificarToken, soloProfesor, obtenerResultadosQuiz)
+router.delete('/:id', verificarToken, soloProfesor, eliminarQuiz)
+router.post('/:id/responder', verificarToken, responderQuiz)
 
 module.exports = router

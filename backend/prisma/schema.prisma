@@ -34,6 +34,7 @@ model User {
   publicacionesForo PublicacionForo[]
   comentariosPub    ComentarioPub[]
   notificaciones    Notificacion[]
+  intentosQuiz      IntentoQuiz[]
 }
 
 enum Rol {
@@ -92,6 +93,7 @@ model Materia {
   actividades   Actividad[]
   inscripciones Inscripcion[]
   forosTema     ForoTema[]
+  quizzes       Quiz[]
 }
 
 // ─── INSCRIPCIONES ───────────────────────────────────────────────────────────
@@ -215,6 +217,7 @@ model ForoTema {
   id          Int      @id @default(autoincrement())
   titulo      String
   descripcion String?
+  fechaInicio DateTime?
   fechaLimite DateTime?
   materiaId   Int
   createdAt   DateTime @default(now())
@@ -246,6 +249,49 @@ model ComentarioPub {
 
   autor       User            @relation(fields: [autorId], references: [id], onDelete: Cascade)
   publicacion PublicacionForo @relation(fields: [publicacionId], references: [id], onDelete: Cascade)
+}
+
+// ─── QUIZ ────────────────────────────────────────────────────────────────────
+
+model Quiz {
+  id          Int      @id @default(autoincrement())
+  titulo      String
+  descripcion String?
+  formUrl     String?
+  fechaInicio DateTime?
+  fechaLimite DateTime?
+  materiaId   Int
+  createdAt   DateTime @default(now())
+
+  materia   Materia        @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  preguntas PreguntaQuiz[]
+  intentos  IntentoQuiz[]
+}
+
+model PreguntaQuiz {
+  id        Int      @id @default(autoincrement())
+  texto     String
+  opciones  String[]
+  correcta  Int
+  quizId    Int
+  createdAt DateTime @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model IntentoQuiz {
+  id           Int      @id @default(autoincrement())
+  estudianteId Int
+  quizId       Int
+  nota         Float
+  intentos     Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  estudiante User @relation(fields: [estudianteId], references: [id], onDelete: Cascade)
+  quiz       Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([estudianteId, quizId])
 }
 
 // ─── NOTIFICACIONES (de evento) ──────────────────────────────────────────────

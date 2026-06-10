@@ -101,4 +101,10 @@ export const foroService = {
   marcarNotiLeida: (id) => api.put('/foros/notificaciones/' + id + '/leida'),
 }
 
+export const quizService = {
+  crearQuiz: (data) => api.post('/quiz', data),
+  getQuizzesMateria: (materiaId) => api.get('/quiz/materia/' + materiaId),
+  eliminarQuiz: (id) => api.delete('/quiz/' + id),
+  responderQuiz: (id, respuestas) => api.post('/quiz/' + id + '/responder', { respuestas }),
+}
 export default api

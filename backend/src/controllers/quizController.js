@@ -1,155 +1,130 @@
 const { PrismaClient } = require('@prisma/client')
 const prisma = new PrismaClient()
 
+// PROFESOR: crear quiz con preguntas
 const crearQuiz = async (req, res) => {
   try {
-    const { titulo, cursoId, preguntas } = req.body
+    const { materiaId, titulo, descripcion, preguntas, fechaInicio, fechaLimite } = req.body
+    if (!titulo || !materiaId) return res.status(400).json({ message: 'Titulo y materia requeridos' })
+    if (!Array.isArray(preguntas) || preguntas.length === 0) return res.status(400).json({ message: 'Agrega al menos una pregunta' })
 
-    if (!titulo || !cursoId || !preguntas || preguntas.length === 0) {
-      return res.status(400).json({ message: 'Todos los campos son obligatorios' })
-    }
-
-    const curso = await prisma.curso.findUnique({ where: { id: parseInt(cursoId) } })
-    if (!curso) {
-      return res.status(404).json({ message: 'Curso no encontrado' })
-    }
-
-    if (curso.profesorId !== req.usuario.id) {
-      return res.status(403).json({ message: 'No tienes permiso para crear quizzes en este curso' })
-    }
+    const materia = await prisma.materia.findUnique({
+      where: { id: parseInt(materiaId) },
+      include: { inscripciones: true }
+    })
 
     const quiz = await prisma.quiz.create({
       data: {
         titulo,
-        cursoId: parseInt(cursoId),
+        descripcion: descripcion || null,
+        fechaInicio: fechaInicio ? new Date(fechaInicio) : null,
+        fechaLimite: fechaLimite ? new Date(fechaLimite) : null,
+        materiaId: parseInt(materiaId),
         preguntas: {
-          create: preguntas.map(p => ({
-            texto: p.texto,
-            opciones: p.opciones,
-            correcta: p.correcta
-          }))
+          create: preguntas.map(p => ({ texto: p.texto, opciones: p.opciones, correcta: p.correcta }))
         }
       },
       include: { preguntas: true }
     })
 
-    res.status(201).json({ message: 'Quiz creado exitosamente', quiz })
-  } catch (error) {
-    res.status(500).json({ message: 'Error en el servidor', error: error.message })
-  }
-}
-
-const obtenerQuizzesPorCurso = async (req, res) => {
-  try {
-    const { cursoId } = req.params
-    const quizzes = await prisma.quiz.findMany({
-      where: { cursoId: parseInt(cursoId) },
-      include: { _count: { select: { preguntas: true } } }
-    })
-    res.json(quizzes)
-  } catch (error) {
-    res.status(500).json({ message: 'Error en el servidor', error: error.message })
-  }
-}
-
-const obtenerQuizPorId = async (req, res) => {
-  try {
-    const { id } = req.params
-    const quiz = await prisma.quiz.findUnique({
-      where: { id: parseInt(id) },
-      include: { preguntas: true }
-    })
-
-    if (!quiz) {
-      return res.status(404).json({ message: 'Quiz no encontrado' })
+    if (materia?.inscripciones?.length) {
+      await prisma.notificacion.createMany({
+        data: materia.inscripciones.map(i => ({
+          userId: i.estudianteId,
+          tipo: 'quiz_nuevo',
+          titulo: 'Nuevo quiz disponible',
+          mensaje: titulo + (materia?.nombre ? ' · ' + materia.nombre : ''),
+          ruta: '/estudiante/cursos?insc=' + i.id
+        }))
+      })
     }
 
-    res.json(quiz)
-  } catch (error) {
-    res.status(500).json({ message: 'Error en el servidor', error: error.message })
+    res.status(201).json({ message: 'Quiz creado', quiz })
+  } catch (err) {
+    console.error('ERROR CREAR QUIZ:', err)
+    res.status(500).json({ message: 'Error creando quiz', error: err.message })
   }
 }
 
+// Listar quizzes de una materia
+const getQuizzesMateria = async (req, res) => {
+  try {
+    const { materiaId } = req.params
+    const quizzes = await prisma.quiz.findMany({
+      where: { materiaId: parseInt(materiaId) },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        preguntas: true,
+        intentos: { include: { estudiante: { select: { id: true, nombre: true } } } }
+      }
+    })
+    res.json(quizzes)
+  } catch (err) {
+    console.error('ERROR GET QUIZZES:', err)
+    res.status(500).json({ message: 'Error obteniendo quizzes', error: err.message })
+  }
+}
+
+// PROFESOR: eliminar quiz
+const eliminarQuiz = async (req, res) => {
+  try {
+    const { id } = req.params
+    await prisma.quiz.delete({ where: { id: parseInt(id) } })
+    res.json({ message: 'Quiz eliminado' })
+  } catch (err) {
+    console.error('ERROR ELIMINAR QUIZ:', err)
+    res.status(500).json({ message: 'Error eliminando quiz', error: err.message })
+  }
+}
+
+// ESTUDIANTE: responder (autocalifica, max 2 intentos, mejor nota)
 const responderQuiz = async (req, res) => {
   try {
     const { id } = req.params
     const { respuestas } = req.body
-    const estudianteId = req.usuario.id
 
     const quiz = await prisma.quiz.findUnique({
       where: { id: parseInt(id) },
-      include: { preguntas: true }
+      include: { preguntas: { orderBy: { id: 'asc' } } }
+    })
+    if (!quiz) return res.status(404).json({ message: 'Quiz no encontrado' })
+
+    const ahora = new Date()
+    if (quiz.fechaInicio && ahora < new Date(quiz.fechaInicio))
+      return res.status(403).json({ message: 'El quiz aun no esta disponible' })
+    if (quiz.fechaLimite && ahora > new Date(quiz.fechaLimite))
+      return res.status(403).json({ message: 'El quiz ya cerro' })
+
+    if (!Array.isArray(respuestas) || respuestas.length !== quiz.preguntas.length)
+      return res.status(400).json({ message: 'Respuestas incompletas' })
+
+    let aciertos = 0
+    quiz.preguntas.forEach((p, i) => { if (respuestas[i] === p.correcta) aciertos++ })
+    const nota = parseFloat(((aciertos / quiz.preguntas.length) * 10).toFixed(1))
+
+    const previo = await prisma.intentoQuiz.findUnique({
+      where: { estudianteId_quizId: { estudianteId: req.usuario.id, quizId: parseInt(id) } }
     })
 
-    if (!quiz) {
-      return res.status(404).json({ message: 'Quiz no encontrado' })
+    if (previo) {
+      if (previo.intentos >= 2)
+        return res.status(400).json({ message: 'Ya usaste tus 2 intentos', nota: previo.nota, aciertos, total: quiz.preguntas.length, sinIntentos: true })
+      const mejorNota = Math.max(previo.nota, nota)
+      const actualizado = await prisma.intentoQuiz.update({
+        where: { estudianteId_quizId: { estudianteId: req.usuario.id, quizId: parseInt(id) } },
+        data: { nota: mejorNota, intentos: previo.intentos + 1 }
+      })
+      return res.json({ message: 'Quiz enviado', nota, aciertos, total: quiz.preguntas.length, mejorNota: actualizado.nota, intentos: actualizado.intentos })
     }
 
-    const yaRespondio = await prisma.resultadoQuiz.findFirst({
-      where: { quizId: parseInt(id), estudianteId }
+    const nuevo = await prisma.intentoQuiz.create({
+      data: { estudianteId: req.usuario.id, quizId: parseInt(id), nota, intentos: 1 }
     })
-
-    if (yaRespondio) {
-      return res.status(400).json({ message: 'Ya respondiste este quiz' })
-    }
-
-    let correctas = 0
-    const resultados = quiz.preguntas.map((pregunta, index) => {
-      const esCorrecta = respuestas[index] === pregunta.correcta
-      if (esCorrecta) correctas++
-      return {
-        pregunta: pregunta.texto,
-        tuRespuesta: pregunta.opciones[respuestas[index]],
-        respuestaCorrecta: pregunta.opciones[pregunta.correcta],
-        esCorrecta
-      }
-    })
-
-    const calificacion = (correctas / quiz.preguntas.length) * 10
-
-    await prisma.resultadoQuiz.create({
-      data: {
-        estudianteId,
-        quizId: parseInt(id),
-        calificacion,
-        correctas,
-        total: quiz.preguntas.length,
-        respuestas: resultados
-      }
-    })
-
-    res.json({
-      message: 'Quiz completado',
-      calificacion: calificacion.toFixed(1),
-      correctas,
-      total: quiz.preguntas.length,
-      resultados
-    })
-  } catch (error) {
-    res.status(500).json({ message: 'Error en el servidor', error: error.message })
+    res.json({ message: 'Quiz enviado', nota, aciertos, total: quiz.preguntas.length, mejorNota: nuevo.nota, intentos: nuevo.intentos })
+  } catch (err) {
+    console.error('ERROR RESPONDER QUIZ:', err)
+    res.status(500).json({ message: 'Error enviando quiz', error: err.message })
   }
 }
 
-const obtenerResultadosQuiz = async (req, res) => {
-  try {
-    const { id } = req.params
-    const resultados = await prisma.resultadoQuiz.findMany({
-      where: { quizId: parseInt(id) },
-      include: {
-        estudiante: { select: { id: true, nombre: true, email: true } }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
-    res.json(resultados)
-  } catch (error) {
-    res.status(500).json({ message: 'Error en el servidor', error: error.message })
-  }
-}
-
-module.exports = {
-  crearQuiz,
-  obtenerQuizzesPorCurso,
-  obtenerQuizPorId,
-  responderQuiz,
-  obtenerResultadosQuiz
-}
+module.exports = { crearQuiz, getQuizzesMateria, eliminarQuiz, responderQuiz }

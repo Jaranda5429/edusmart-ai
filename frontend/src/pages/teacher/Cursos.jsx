@@ -3,7 +3,7 @@ import { useProfesor } from '../../context/ProfesorContext'
 import { useAuth } from '../../context/AuthContext'
 import Layout from '../../components/Layout'
 import { useSearchParams } from 'react-router-dom'
-import { foroService } from '../../services/api'
+import { foroService, quizService } from '../../services/api'
 import { subirContenido } from '../../services/supabase'
 
 const NAV = [
@@ -20,7 +20,6 @@ const TIPOS_CONTENIDO = [
   { id: 'imagen',       icon: '🖼️', label: 'Imagen',        accept: 'image/*' },
   { id: 'video_link',   icon: '🎥', label: 'Video YouTube' },
   { id: 'video_propio', icon: '📹', label: 'Video propio',  accept: 'video/*' },
-  { id: 'quiz',         icon: '❓', label: 'Quiz' },
   { id: 'explicacion',  icon: '📋', label: 'Instrucciones' },
   { id: 'link',         icon: '🔗', label: 'Enlace' },
 ]
@@ -85,12 +84,23 @@ export default function TeacherCursos() {
   const [foroSel, setForoSel] = useState(null)
   const [showModalForo, setShowModalForo] = useState(false)
   const [editandoForo, setEditandoForo] = useState(null)
-  const [formForo, setFormForo] = useState({ titulo: '', descripcion: '', fechaLimite: '' })
+  const [formForo, setFormForo] = useState({ titulo: '', descripcion: '', fechaInicio: '', fechaLimite: '' })
   const [confirmDelForo, setConfirmDelForo] = useState(null)
   const [comentTemp, setComentTemp] = useState({})
   const [confirmDelPub, setConfirmDelPub] = useState(null)
   const [motivoDel, setMotivoDel] = useState('')
+  const [quizzes, setQuizzes] = useState([])
+  const [quizSel, setQuizSel] = useState(null)
+  const [showModalQuiz, setShowModalQuiz] = useState(false)
+  const [formQuiz, setFormQuiz] = useState({ titulo: '', descripcion: '', fechaInicio: '', fechaLimite: '' })
+  const [preguntasQuiz, setPreguntasQuiz] = useState([])
+  const [pregTemp, setPregTemp] = useState({ texto: '', opciones: ['', '', '', ''], correcta: 0 })
+  const [confirmDelQuiz, setConfirmDelQuiz] = useState(null)
 
+  const [subiendoCont, setSubiendoCont] = useState(false)
+  const [tipoSelEdit, setTipoSelEdit] = useState(null)
+  const [contTempEdit, setContTempEdit] = useState({ texto: '', url: '', archivo: null })
+  const [subiendoContEdit, setSubiendoContEdit] = useState(false)
 
   const gradosDelPeriodo = periodoSel ? (periodos.find(p => p.id === periodoSel.id)?.grados || []) : []
   const gradoActual = gradoSel ? (gradosDelPeriodo.find(g => g.id === gradoSel.id) || gradoSel) : null
@@ -142,14 +152,9 @@ export default function TeacherCursos() {
     setMateriaSel(m); setLoadingActs(true)
     await cargarActividades(m.id)
     cargarForos(m.id)
+    cargarQuizzes(m.id)
     setLoadingActs(false); setVista('actividades')
   }
-
-  const [subiendoCont, setSubiendoCont] = useState(false)
-
-  const [tipoSelEdit, setTipoSelEdit] = useState(null)
-  const [contTempEdit, setContTempEdit] = useState({ texto: '', url: '', archivo: null })
-  const [subiendoContEdit, setSubiendoContEdit] = useState(false)
 
   const addContenidoEdit = async () => {
     if (!tipoSelEdit) return
@@ -172,8 +177,7 @@ export default function TeacherCursos() {
   const addContenido = async () => {
     if (!tipoSel) return
     let c = { tipo: tipoSel.id, label: tipoSel.label, icon: tipoSel.icon }
-    if (tipoSel.id === 'quiz') { if (!preguntas.length) return; c = { ...c, preguntas } }
-    else if (tipoSel.id === 'explicacion') { if (!contTemp.texto) return; c = { ...c, texto: contTemp.texto } }
+    if (tipoSel.id === 'explicacion') { if (!contTemp.texto) return; c = { ...c, texto: contTemp.texto } }
     else if (['video_link', 'link'].includes(tipoSel.id)) { if (!contTemp.url) return; c = { ...c, url: contTemp.url } }
     else if (['archivo', 'video_propio', 'imagen'].includes(tipoSel.id)) {
       if (!contTemp.archivo) return
@@ -191,6 +195,7 @@ export default function TeacherCursos() {
     setNuevaAct(p => ({ ...p, contenidos: [...p.contenidos, c] }))
     setTipoSel(null); setContTemp({ texto: '', url: '', archivo: null }); setPreguntas([])
   }
+
   const crearActividad = async () => {
     if (!nuevaAct.titulo || !nuevaAct.fechaLimite) return
     try {
@@ -199,6 +204,7 @@ export default function TeacherCursos() {
       setShowModalAct(false)
     } catch { alert('Error creando actividad') }
   }
+
   const fmtInput = iso => {
     if (!iso) return ''
     const d = new Date(iso)
@@ -247,8 +253,8 @@ export default function TeacherCursos() {
     setLoadingForos(false)
   }
 
-  const abrirNuevoForo = () => { setEditandoForo(null); setFormForo({ titulo: '', descripcion: '', fechaLimite: '' }); setShowModalForo(true) }
-  const abrirEditarForo = (f, e) => { e.stopPropagation(); setEditandoForo(f); setFormForo({ titulo: f.titulo, descripcion: f.descripcion || '', fechaLimite: f.fechaLimite ? f.fechaLimite.slice(0,10) : '' }); setShowModalForo(true) }
+  const abrirNuevoForo = () => { setEditandoForo(null); setFormForo({ titulo: '', descripcion: '', fechaInicio: '', fechaLimite: '' }); setShowModalForo(true) }
+  const abrirEditarForo = (f, e) => { e.stopPropagation(); setEditandoForo(f); setFormForo({ titulo: f.titulo, descripcion: f.descripcion || '', fechaInicio: fmtInput(f.fechaInicio), fechaLimite: fmtInput(f.fechaLimite) }); setShowModalForo(true) }
 
   const guardarForo = async () => {
     if (!formForo.titulo.trim()) return
@@ -264,7 +270,7 @@ export default function TeacherCursos() {
     try {
       await foroService.eliminarForo(confirmDelForo.id)
       setConfirmDelForo(null)
-      if (vista === 'foro_detalle') { setForoSel(null); setVista('foros') }
+      if (vista === 'foro_detalle') { setForoSel(null); setVista('actividades') }
       await cargarForos(materiaSel.id)
     } catch { alert('Error eliminando foro') }
   }
@@ -294,6 +300,48 @@ export default function TeacherCursos() {
     } catch { alert('Error eliminando publicacion') }
   }
 
+  const cargarQuizzes = async (materiaId) => {
+    try {
+      const res = await quizService.getQuizzesMateria(materiaId)
+      setQuizzes(res.data || [])
+    } catch { console.error('Error cargando quizzes') }
+  }
+
+  const abrirNuevoQuiz = () => {
+    setFormQuiz({ titulo: '', descripcion: '', fechaInicio: '', fechaLimite: '' })
+    setPreguntasQuiz([])
+    setPregTemp({ texto: '', opciones: ['', '', '', ''], correcta: 0 })
+    setShowModalQuiz(true)
+  }
+
+  const agregarPregunta = () => {
+    if (!pregTemp.texto.trim()) return
+    if (pregTemp.opciones.some(o => !o.trim())) { alert('Completa las 4 opciones'); return }
+    setPreguntasQuiz(p => [...p, { ...pregTemp }])
+    setPregTemp({ texto: '', opciones: ['', '', '', ''], correcta: 0 })
+  }
+
+  const guardarQuiz = async () => {
+    if (!formQuiz.titulo.trim()) { alert('Ponle un titulo al quiz'); return }
+    if (preguntasQuiz.length === 0) { alert('Agrega al menos una pregunta'); return }
+    try {
+      await quizService.crearQuiz({ ...formQuiz, materiaId: materiaSel.id, preguntas: preguntasQuiz })
+      setShowModalQuiz(false)
+      await cargarQuizzes(materiaSel.id)
+    } catch { alert('Error creando quiz') }
+  }
+
+  const confirmarEliminarQuiz = async () => {
+    try {
+      await quizService.eliminarQuiz(confirmDelQuiz.id)
+      setConfirmDelQuiz(null)
+      if (vista === 'quiz_detalle') { setQuizSel(null); setVista('actividades') }
+      await cargarQuizzes(materiaSel.id)
+    } catch { alert('Error eliminando quiz') }
+  }
+
+  const quizActual = quizSel ? (quizzes.find(q => q.id === quizSel.id) || quizSel) : null
+
   const guardarNota = async () => {
     const n = parseFloat(notaTemp)
     if (isNaN(n) || n < 0 || n > 10) return
@@ -304,9 +352,10 @@ export default function TeacherCursos() {
   }
 
   const volver = () => {
-    const mapa = { calificar: 'actividad_detalle', actividad_detalle: 'actividades', foro_detalle: 'actividades', actividades: 'materias', materias: 'grados', grados: 'periodos' }
+    const mapa = { calificar: 'actividad_detalle', actividad_detalle: 'actividades', foro_detalle: 'actividades', quiz_detalle: 'actividades', actividades: 'materias', materias: 'grados', grados: 'periodos' }
     if (vista === 'actividad_detalle') setTabActiva('contenido')
     if (vista === 'foro_detalle') setForoSel(null)
+    if (vista === 'quiz_detalle') setQuizSel(null)
     if (vista === 'actividades') setMateriaSel(null)
     if (vista === 'materias') setGradoSel(null)
     if (vista === 'grados') setPeriodoSel(null)
@@ -331,6 +380,7 @@ export default function TeacherCursos() {
     materias: (gradoSel?.nombre || '') + ' — Materias', actividades: (materiaSel?.nombre || '') + ' — Actividades',
     actividad_detalle: actActual?.titulo || '', calificar: 'Calificar — ' + (estudianteSel?.nombre || ''),
     foro_detalle: foroActual?.titulo || 'Foro',
+    quiz_detalle: quizActual?.titulo || 'Quiz',
   }
 
   return (
@@ -420,7 +470,6 @@ export default function TeacherCursos() {
               ) : (
                 <div className="grid grid-cols-3 gap-5">
                   {gradosDelPeriodo.map((g, i) => {
-                    const c = COLS[i % COLS.length]
                     const numMaterias = g.materias?.length || 0
                     const numEsts = g.materias?.reduce((a, m) => a + (m._count?.inscripciones || 0), 0) || 0
                     return (
@@ -500,6 +549,7 @@ export default function TeacherCursos() {
               <div className="flex gap-3 flex-wrap">
                 <button onClick={() => setShowModalAct(true)} className="bg-purple-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-purple-700 text-sm shadow-md">+ Nueva Actividad</button>
                 <button onClick={abrirNuevoForo} className="bg-white border-2 border-purple-200 text-purple-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-purple-50 text-sm">💬 Publicar foro</button>
+                <button onClick={abrirNuevoQuiz} className="bg-white border-2 border-purple-200 text-purple-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-purple-50 text-sm">❓ Crear quiz</button>
                 <button onClick={() => { setClaveMateria(materiaSel); setClaveInput(claveActual || ''); setShowModalClave(true) }}
                   className="bg-white border-2 border-purple-200 text-purple-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-purple-50 text-sm">
                   🔑 {claveActual ? 'Clave: ' + claveActual : 'Crear clave de matricula'}
@@ -524,6 +574,28 @@ export default function TeacherCursos() {
                       <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={(e) => abrirEditarForo(f, e)} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-500 hover:text-purple-600 hover:bg-purple-50 shadow-sm text-sm border border-gray-100">✏️</button>
                         <button onClick={(e) => { e.stopPropagation(); setConfirmDelForo(f) }} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-500 hover:text-red-600 hover:bg-red-50 shadow-sm text-sm border border-gray-100">🗑️</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {quizzes.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">Quizzes</p>
+                  {quizzes.map(q => (
+                    <div key={q.id} className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all group relative">
+                      <button onClick={() => { setQuizSel(q); setVista('quiz_detalle') }} className="w-full text-left">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">❓</div>
+                          <div className="flex-1 min-w-0 pr-16">
+                            <h4 className="font-bold text-gray-800 mb-1">{q.titulo}</h4>
+                            <p className="text-xs text-gray-400">{(q.preguntas?.length || 0) + ' preguntas · ' + (q.intentos?.length || 0) + ' resueltos'}</p>
+                          </div>
+                        </div>
+                      </button>
+                      <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); setConfirmDelQuiz(q) }} className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-500 hover:text-red-600 hover:bg-red-50 shadow-sm text-sm border border-gray-100">🗑️</button>
                       </div>
                     </div>
                   ))}
@@ -703,7 +775,10 @@ export default function TeacherCursos() {
                   <div className="flex-1">
                     <h3 className="font-bold text-gray-800 text-lg mb-1">{foroActual.titulo}</h3>
                     {foroActual.descripcion && <p className="text-gray-500 text-sm">{foroActual.descripcion}</p>}
-                    {foroActual.fechaLimite && <p className="text-xs text-gray-400 mt-2">{'⏰ Cierra: ' + fmt(foroActual.fechaLimite)}</p>}
+                    <div className="flex gap-3 flex-wrap mt-2">
+                      {foroActual.fechaInicio && <span className="text-xs px-3 py-1 rounded-lg border bg-purple-50 text-purple-600 border-purple-100">{'📅 Abre: ' + fmt(foroActual.fechaInicio)}</span>}
+                      {foroActual.fechaLimite && <span className="text-xs px-3 py-1 rounded-lg border bg-orange-50 text-orange-600 border-orange-100">{'⏰ Cierra: ' + fmt(foroActual.fechaLimite)}</span>}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -758,6 +833,63 @@ export default function TeacherCursos() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* DETALLE QUIZ (profesor) */}
+          {vista === 'quiz_detalle' && quizActual && (
+            <div className="space-y-5">
+              <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <span className="text-3xl">❓</span>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800 text-lg mb-1">{quizActual.titulo}</h3>
+                    {quizActual.descripcion && <p className="text-gray-500 text-sm">{quizActual.descripcion}</p>}
+                    <p className="text-xs text-gray-400 mt-2">{(quizActual.preguntas?.length || 0) + ' preguntas'}</p>
+                    <div className="flex gap-3 flex-wrap mt-2">
+                      {quizActual.fechaInicio && <span className="text-xs px-3 py-1 rounded-lg border bg-purple-50 text-purple-600 border-purple-100">{'📅 Abre: ' + fmt(quizActual.fechaInicio)}</span>}
+                      {quizActual.fechaLimite && <span className="text-xs px-3 py-1 rounded-lg border bg-orange-50 text-orange-600 border-orange-100">{'⏰ Cierra: ' + fmt(quizActual.fechaLimite)}</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-sm font-bold text-gray-500 uppercase tracking-wider">
+                Resultados ({quizActual.intentos?.length || 0})
+              </p>
+
+              {!quizActual.intentos?.length ? (
+                <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
+                  <span className="text-5xl">📊</span>
+                  <p className="text-gray-500 mt-3 font-semibold">Nadie ha resuelto el quiz aún</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                  <table className="w-full">
+                    <thead><tr className="bg-slate-50 border-b border-gray-100">
+                      <th className="text-left py-3 px-5 text-xs font-semibold text-gray-500 uppercase">Estudiante</th>
+                      <th className="text-center py-3 px-5 text-xs font-semibold text-gray-500 uppercase">Intentos</th>
+                      <th className="text-center py-3 px-5 text-xs font-semibold text-gray-500 uppercase">Mejor nota</th>
+                    </tr></thead>
+                    <tbody>
+                      {[...quizActual.intentos].sort((a, b) => b.nota - a.nota).map((it, i) => (
+                        <tr key={i} className="border-b border-gray-50 hover:bg-slate-50">
+                          <td className="py-3.5 px-5">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold text-sm">{it.estudiante?.nombre?.charAt(0) || '?'}</div>
+                              <span className="font-semibold text-sm text-gray-800">{it.estudiante?.nombre || 'Estudiante'}</span>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-5 text-center text-gray-600 text-sm">{it.intentos}/2</td>
+                          <td className="py-3.5 px-5 text-center">
+                            <span className={'font-bold text-sm ' + (it.nota >= 7 ? 'text-green-600' : 'text-red-500')}>{it.nota}/10</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
@@ -958,7 +1090,7 @@ export default function TeacherCursos() {
                 )}
                 {!tipoSelEdit ? (
                   <div className="grid grid-cols-4 gap-2">
-                    {TIPOS_CONTENIDO.filter(t => t.id !== 'quiz').map(t => (
+                    {TIPOS_CONTENIDO.map(t => (
                       <button key={t.id} onClick={() => setTipoSelEdit(t)} className="bg-slate-50 hover:bg-purple-50 rounded-xl p-3 text-center transition-all border-2 border-transparent hover:border-purple-200">
                         <div className="text-2xl mb-1">{t.icon}</div>
                         <p className="text-xs font-semibold text-gray-700">{t.label}</p>
@@ -1008,11 +1140,72 @@ export default function TeacherCursos() {
             <div className="p-7 space-y-4">
               <div><label className={lbl}>Tema del foro *</label><input value={formForo.titulo} onChange={e => setFormForo(p => ({ ...p, titulo: e.target.value }))} placeholder="Ej: Debate sobre el cambio climatico" className={inp} autoFocus /></div>
               <div><label className={lbl}>Descripcion / consigna</label><textarea value={formForo.descripcion} onChange={e => setFormForo(p => ({ ...p, descripcion: e.target.value }))} rows={3} placeholder="Explica de que trata el foro y que deben responder..." className={inp + ' resize-none'} /></div>
-              <div><label className={lbl}>Fecha limite (opcional)</label><input type="date" value={formForo.fechaLimite} onChange={e => setFormForo(p => ({ ...p, fechaLimite: e.target.value }))} className={inp} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={lbl}>Fecha de inicio (opcional)</label><input type="datetime-local" value={formForo.fechaInicio} onChange={e => setFormForo(p => ({ ...p, fechaInicio: e.target.value }))} className={inp} /></div>
+                <div><label className={lbl}>Fecha limite (opcional)</label><input type="datetime-local" value={formForo.fechaLimite} onChange={e => setFormForo(p => ({ ...p, fechaLimite: e.target.value }))} className={inp} /></div>
+              </div>
             </div>
             <div className="px-7 py-5 border-t border-gray-100 flex gap-3">
               <button onClick={() => setShowModalForo(false)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 text-sm">Cancelar</button>
               <button onClick={guardarForo} disabled={!formForo.titulo.trim()} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md text-sm disabled:opacity-40">{editandoForo ? 'Guardar cambios' : 'Publicar foro'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CREAR QUIZ */}
+      {showModalQuiz && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="px-7 py-5 border-b border-gray-100 flex-shrink-0">
+              <h3 className="font-black text-gray-900 text-lg">Crear quiz</h3>
+              <p className="text-gray-400 text-sm">{materiaSel?.nombre}</p>
+            </div>
+            <div className="flex-1 overflow-y-auto p-7 space-y-4">
+              <div><label className={lbl}>Titulo del quiz *</label><input value={formQuiz.titulo} onChange={e => setFormQuiz(p => ({ ...p, titulo: e.target.value }))} placeholder="Ej: Quiz de fracciones" className={inp} autoFocus /></div>
+              <div><label className={lbl}>Descripcion</label><textarea value={formQuiz.descripcion} onChange={e => setFormQuiz(p => ({ ...p, descripcion: e.target.value }))} rows={2} placeholder="Instrucciones del quiz..." className={inp + ' resize-none'} /></div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><label className={lbl}>Fecha de inicio (opcional)</label><input type="datetime-local" value={formQuiz.fechaInicio} onChange={e => setFormQuiz(p => ({ ...p, fechaInicio: e.target.value }))} className={inp} /></div>
+                <div><label className={lbl}>Fecha limite (opcional)</label><input type="datetime-local" value={formQuiz.fechaLimite} onChange={e => setFormQuiz(p => ({ ...p, fechaLimite: e.target.value }))} className={inp} /></div>
+              </div>
+
+              {preguntasQuiz.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-gray-700">Preguntas agregadas ({preguntasQuiz.length})</p>
+                  {preguntasQuiz.map((p, i) => (
+                    <div key={i} className="bg-slate-50 rounded-xl p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-semibold text-gray-800 text-sm">{(i + 1) + '. ' + p.texto}</p>
+                        <button onClick={() => setPreguntasQuiz(prev => prev.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-600 flex-shrink-0">✕</button>
+                      </div>
+                      <div className="mt-2 space-y-1">
+                        {p.opciones.map((o, j) => (
+                          <p key={j} className={'text-xs ' + (j === p.correcta ? 'text-green-600 font-semibold' : 'text-gray-500')}>
+                            {(j === p.correcta ? '✓ ' : '• ') + o}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="bg-purple-50 rounded-xl p-5 space-y-3 border border-purple-100">
+                <p className="text-sm font-semibold text-purple-800">Nueva pregunta</p>
+                <input value={pregTemp.texto} onChange={e => setPregTemp(p => ({ ...p, texto: e.target.value }))} placeholder="Escribe la pregunta..." className={inp + ' bg-white'} />
+                <p className="text-xs text-gray-500 font-semibold">Opciones (marca la correcta)</p>
+                {pregTemp.opciones.map((o, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input type="radio" name="correcta" checked={pregTemp.correcta === i} onChange={() => setPregTemp(p => ({ ...p, correcta: i }))} className="w-4 h-4 accent-purple-600 flex-shrink-0" />
+                    <input value={o} onChange={e => setPregTemp(p => { const ops = [...p.opciones]; ops[i] = e.target.value; return { ...p, opciones: ops } })} placeholder={'Opcion ' + (i + 1)} className={inp + ' bg-white'} />
+                  </div>
+                ))}
+                <button onClick={agregarPregunta} className="w-full bg-purple-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-purple-700">+ Agregar pregunta</button>
+              </div>
+            </div>
+            <div className="px-7 py-5 border-t border-gray-100 flex gap-3 flex-shrink-0">
+              <button onClick={() => setShowModalQuiz(false)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 text-sm">Cancelar</button>
+              <button onClick={guardarQuiz} disabled={!formQuiz.titulo.trim() || preguntasQuiz.length === 0} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md text-sm disabled:opacity-40">Crear quiz</button>
             </div>
           </div>
         </div>
@@ -1049,6 +1242,21 @@ export default function TeacherCursos() {
             <div className="flex gap-3">
               <button onClick={() => { setConfirmDelPub(null); setMotivoDel('') }} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 text-sm">Cancelar</button>
               <button onClick={confirmarEliminarPub} className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 shadow-md text-sm">Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRMAR ELIMINAR QUIZ */}
+      {confirmDelQuiz && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+            <span className="text-5xl">⚠️</span>
+            <h3 className="font-black text-gray-900 text-xl mt-3 mb-2">Eliminar quiz</h3>
+            <p className="text-gray-500 text-sm mb-6">Vas a eliminar <span className="font-bold text-gray-800">{confirmDelQuiz.titulo}</span>. Se borrarán sus preguntas y los resultados de los estudiantes. Esta accion no se puede deshacer.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmDelQuiz(null)} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50 text-sm">Cancelar</button>
+              <button onClick={confirmarEliminarQuiz} className="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold hover:bg-red-600 shadow-md text-sm">Eliminar</button>
             </div>
           </div>
         </div>

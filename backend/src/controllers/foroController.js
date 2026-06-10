@@ -4,12 +4,12 @@ const prisma = new PrismaClient()
 // ── PROFESOR: crear foro en una materia ──────────────────────────────────────
 const crearForo = async (req, res) => {
   try {
-    const { materiaId, titulo, descripcion, fechaLimite } = req.body
+    const { materiaId, titulo, descripcion, fechaInicio, fechaLimite } = req.body
     if (!titulo || !materiaId) return res.status(400).json({ message: 'Titulo y materia requeridos' })
 
     const materia = await prisma.materia.findUnique({
       where: { id: parseInt(materiaId) },
-      include: { grado: { include: { periodo: true } } }
+      include: { grado: { include: { periodo: true } }, inscripciones: true }
     })
     if (!materia || materia.grado.periodo.profesorId !== req.usuario.id)
       return res.status(403).json({ message: 'Sin permiso' })
@@ -18,10 +18,24 @@ const crearForo = async (req, res) => {
       data: {
         titulo,
         descripcion: descripcion || null,
+        fechaInicio: fechaInicio ? new Date(fechaInicio) : null,
         fechaLimite: fechaLimite ? new Date(fechaLimite) : null,
         materiaId: parseInt(materiaId)
       }
     })
+
+    if (materia.inscripciones.length) {
+      await prisma.notificacion.createMany({
+        data: materia.inscripciones.map(i => ({
+          userId: i.estudianteId,
+          tipo: 'foro_nuevo',
+          titulo: 'Nuevo foro de discusión',
+          mensaje: titulo + ' · ' + materia.nombre,
+          ruta: '/estudiante/cursos?insc=' + i.id
+        }))
+      })
+    }
+
     res.status(201).json({ message: 'Foro publicado', foro })
   } catch (err) {
     console.error('ERROR CREAR FORO:', err)
@@ -57,7 +71,7 @@ const getForosMateria = async (req, res) => {
 const editarForo = async (req, res) => {
   try {
     const { id } = req.params
-    const { titulo, descripcion, fechaLimite } = req.body
+    const { titulo, descripcion, fechaInicio, fechaLimite } = req.body
     const foro = await prisma.foroTema.findUnique({
       where: { id: parseInt(id) },
       include: { materia: { include: { grado: { include: { periodo: true } } } } }
@@ -71,6 +85,7 @@ const editarForo = async (req, res) => {
       data: {
         titulo: titulo ?? foro.titulo,
         descripcion: descripcion !== undefined ? descripcion : foro.descripcion,
+        fechaInicio: fechaInicio ? new Date(fechaInicio) : null,
         fechaLimite: fechaLimite ? new Date(fechaLimite) : null
       }
     })
@@ -111,6 +126,12 @@ const publicar = async (req, res) => {
     const foro = await prisma.foroTema.findUnique({ where: { id: parseInt(foroTemaId) } })
     if (!foro) return res.status(404).json({ message: 'Foro no encontrado' })
 
+    const ahora = new Date()
+    if (foro.fechaInicio && ahora < new Date(foro.fechaInicio))
+      return res.status(403).json({ message: 'El foro aun no esta disponible' })
+    if (foro.fechaLimite && ahora > new Date(foro.fechaLimite))
+      return res.status(403).json({ message: 'El foro ya cerro' })
+
     const pub = await prisma.publicacionForo.create({
       data: {
         texto: texto.trim(),
@@ -132,9 +153,16 @@ const editarPublicacion = async (req, res) => {
     const { texto } = req.body
     if (!texto || !texto.trim()) return res.status(400).json({ message: 'El texto es requerido' })
 
-    const pub = await prisma.publicacionForo.findUnique({ where: { id: parseInt(id) } })
+    const pub = await prisma.publicacionForo.findUnique({
+      where: { id: parseInt(id) },
+      include: { foroTema: true }
+    })
     if (!pub) return res.status(404).json({ message: 'Publicacion no encontrada' })
     if (pub.estudianteId !== req.usuario.id) return res.status(403).json({ message: 'Solo puedes editar tu propia publicacion' })
+
+    const ahora = new Date()
+    if (pub.foroTema.fechaLimite && ahora > new Date(pub.foroTema.fechaLimite))
+      return res.status(403).json({ message: 'El foro ya cerro, no puedes editar' })
 
     const actualizada = await prisma.publicacionForo.update({
       where: { id: parseInt(id) },
@@ -245,6 +273,6 @@ const marcarNotiLeida = async (req, res) => {
 
 module.exports = {
   crearForo, getForosMateria, editarForo, eliminarForo,
-  publicar, editarPublicacion, eliminarPublicacion, comentar, 
+  publicar, editarPublicacion, eliminarPublicacion, comentar,
   getNotificaciones, marcarNotiLeida
 }

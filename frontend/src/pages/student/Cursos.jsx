@@ -1,7 +1,7 @@
 import { useState, useEffect} from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useProfesor } from '../../context/ProfesorContext'
-import { academicService, foroService } from '../../services/api'
+import { academicService, foroService, quizService } from '../../services/api'
 import Layout from '../../components/Layout'
 import { subirArchivo } from '../../services/supabase'
 import { useSearchParams } from 'react-router-dom'
@@ -27,9 +27,18 @@ const fmt = iso => {
   return new Date(iso).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 
+// Estado de ventana de tiempo: 'antes' | 'abierto' | 'cerrado'
+const estadoVentana = (fechaInicio, fechaLimite) => {
+  const ahora = new Date()
+  if (fechaInicio && ahora < new Date(fechaInicio)) return 'antes'
+  if (fechaLimite && ahora > new Date(fechaLimite)) return 'cerrado'
+  return 'abierto'
+}
+
 export default function StudentCursos() {
   const { usuario } = useAuth()
   const { getMisInscripciones, cargarInscripciones } = useProfesor()
+  const miId = usuario?.id
 
   const [vista, setVista] = useState('inscripciones')
   const [inscSel, setInscSel] = useState(null)
@@ -48,6 +57,11 @@ export default function StudentCursos() {
   const [editPubId, setEditPubId] = useState(null)
   const [editPubTexto, setEditPubTexto] = useState('')
   const [comentTemp, setComentTemp] = useState({})
+  const [quizzes, setQuizzes] = useState([])
+  const [quizSel, setQuizSel] = useState(null)
+  const [respuestasQuiz, setRespuestasQuiz] = useState({})
+  const [resultadoQuiz, setResultadoQuiz] = useState(null)
+  const [enviandoQuiz, setEnviandoQuiz] = useState(false)
 
   const [searchParams] = useSearchParams()
   const searchQuery = searchParams.get('q')?.toLowerCase() || ''
@@ -66,6 +80,7 @@ export default function StudentCursos() {
       const res = await academicService.getActividades(insc.materiaId)
       setActividades(res.data || [])
       cargarForos(insc.materiaId)
+      cargarQuizzes(insc.materiaId)
     } catch (err) {
       console.error('Error cargando actividades:', err)
       setActividades([])
@@ -82,7 +97,41 @@ export default function StudentCursos() {
     } catch { console.error('Error cargando foros') }
   }
 
+  const cargarQuizzes = async (materiaId) => {
+    try {
+      const res = await quizService.getQuizzesMateria(materiaId)
+      setQuizzes(res.data || [])
+    } catch { console.error('Error cargando quizzes') }
+  }
+
+  const quizActual = quizSel ? (quizzes.find(q => q.id === quizSel.id) || quizSel) : null
+  const miIntentoQuiz = quizActual?.intentos?.find(it => it.estudianteId === miId)
+  const estadoQuiz = quizActual ? estadoVentana(quizActual.fechaInicio, quizActual.fechaLimite) : 'abierto'
+
+  const abrirQuiz = (q) => {
+    setQuizSel(q)
+    setRespuestasQuiz({})
+    setResultadoQuiz(null)
+    setVista('quiz')
+  }
+
+  const enviarQuiz = async () => {
+    if (!quizActual) return
+    const respuestas = quizActual.preguntas.map((p, i) => respuestasQuiz[i])
+    if (respuestas.some(r => r === undefined)) { alert('Responde todas las preguntas'); return }
+    setEnviandoQuiz(true)
+    try {
+      const res = await quizService.responderQuiz(quizActual.id, respuestas)
+      setResultadoQuiz(res.data)
+      await cargarQuizzes(inscSel.materiaId)
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error enviando el quiz')
+    }
+    setEnviandoQuiz(false)
+  }
+
   const foroActual = foroSel ? (foros.find(f => f.id === foroSel.id) || foroSel) : null
+  const estadoForo = foroActual ? estadoVentana(foroActual.fechaInicio, foroActual.fechaLimite) : 'abierto'
 
   const abrirForo = async (f) => {
     setForoSel(f)
@@ -96,7 +145,7 @@ export default function StudentCursos() {
       await foroService.publicar(foroSel.id, pubTexto.trim())
       setPubTexto('')
       await cargarForos(inscSel.materiaId)
-    } catch { alert('Error publicando') }
+    } catch (err) { alert(err.response?.data?.message || 'Error publicando') }
   }
 
   const guardarEditPub = async (pubId) => {
@@ -105,7 +154,7 @@ export default function StudentCursos() {
       await foroService.editarPublicacion(pubId, editPubTexto.trim())
       setEditPubId(null); setEditPubTexto('')
       await cargarForos(inscSel.materiaId)
-    } catch { alert('Error editando') }
+    } catch (err) { alert(err.response?.data?.message || 'Error editando') }
   }
 
   const enviarComentario = async (pubId) => {
@@ -118,7 +167,6 @@ export default function StudentCursos() {
     } catch { alert('Error comentando') }
   }
 
-  const miId = usuario?.id
   const actActual = actividadSel
     ? actividades.find(a => a.id === actividadSel.id) || actividadSel
     : null
@@ -143,10 +191,16 @@ export default function StudentCursos() {
     } else if (vista === 'foro') {
       setForoSel(null)
       setVista('actividades')
+    } else if (vista === 'quiz') {
+      setQuizSel(null)
+      setResultadoQuiz(null)
+      setRespuestasQuiz({})
+      setVista('actividades')
     } else if (vista === 'actividades') {
       setInscSel(null)
       setActividades([])
       setForos([])
+      setQuizzes([])
       setVista('inscripciones')
     }
   }
@@ -159,6 +213,14 @@ export default function StudentCursos() {
     if (ent?.entregado && ent?.calificacion != null) return { txt: ent.calificacion + '/10', cls: 'bg-green-50 text-green-700 border-green-200' }
     if (ent?.entregado) return { txt: 'Entregada', cls: 'bg-purple-50 text-purple-700 border-purple-200' }
     return { txt: 'Pendiente', cls: 'bg-orange-50 text-orange-600 border-orange-200' }
+  }
+
+  // Badge de estado para foro/quiz segun ventana de tiempo
+  const badgeVentana = (estado, intento) => {
+    if (intento != null) return { txt: intento + '/10', cls: 'bg-green-50 text-green-700 border-green-200' }
+    if (estado === 'antes') return { txt: '🔒 No disponible', cls: 'bg-blue-50 text-blue-600 border-blue-200' }
+    if (estado === 'cerrado') return { txt: 'Cerrado', cls: 'bg-red-50 text-red-600 border-red-200' }
+    return { txt: 'Abierto', cls: 'bg-orange-50 text-orange-600 border-orange-200' }
   }
 
   const enviarEntrega = async () => {
@@ -218,7 +280,7 @@ export default function StudentCursos() {
             )}
             <div>
               <h2 className="text-xl font-black text-gray-900">
-                <span>{vista === 'inscripciones' ? 'Mis Cursos' : vista === 'actividades' ? (inscSel?.materiaName || '') : vista === 'foro' ? (foroActual?.titulo || 'Foro') : (actActual?.titulo || '')}</span>
+                <span>{vista === 'inscripciones' ? 'Mis Cursos' : vista === 'actividades' ? (inscSel?.materiaName || '') : vista === 'foro' ? (foroActual?.titulo || 'Foro') : vista === 'quiz' ? (quizActual?.titulo || 'Quiz') : (actActual?.titulo || '')}</span>
               </h2>
               <p className="text-gray-400 text-xs">
                 <span>
@@ -302,7 +364,7 @@ export default function StudentCursos() {
               <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
               <p className="text-gray-400 text-sm">Cargando actividades...</p>
             </div>
-          ) : actividades.length === 0 ? (
+          ) : actividades.length === 0 && foros.length === 0 && quizzes.length === 0 ? (
             <div className="bg-white rounded-2xl p-14 text-center shadow-sm">
               <span className="text-5xl">📭</span>
               <p className="text-gray-500 mt-3 font-semibold">Sin actividades aun</p>
@@ -341,20 +403,55 @@ export default function StudentCursos() {
               {foros.length > 0 && (
                 <div className="pt-4 space-y-3">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Foros de discusión</p>
-                  {foros.map(f => (
-                    <button key={f.id} onClick={() => abrirForo(f)}
-                      className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all text-left group">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">💬</div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-gray-800">{f.titulo}</h4>
-                          {f.descripcion && <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{f.descripcion}</p>}
-                          <p className="text-xs text-gray-400 mt-0.5">{(f.publicaciones?.length || 0) + ' participaciones'}</p>
+                  {foros.map(f => {
+                    const est = estadoVentana(f.fechaInicio, f.fechaLimite)
+                    const b = badgeVentana(est, null)
+                    return (
+                      <button key={f.id} onClick={() => abrirForo(f)}
+                        className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all text-left group">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">💬</div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-gray-800">{f.titulo}</h4>
+                            {f.descripcion && <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{f.descripcion}</p>}
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {est === 'antes' ? ('🔒 Abre: ' + fmt(f.fechaInicio)) : est === 'cerrado' ? ('Cerró: ' + fmt(f.fechaLimite)) : ('⏰ Cierra: ' + fmt(f.fechaLimite))}
+                            </p>
+                          </div>
+                          <span className={'text-xs px-3 py-1.5 rounded-full font-semibold border flex-shrink-0 ' + b.cls}>{b.txt}</span>
+                          <span className="text-gray-300 group-hover:text-purple-400 text-lg">→</span>
                         </div>
-                        <span className="text-gray-300 group-hover:text-purple-400 text-lg">→</span>
-                      </div>
-                    </button>
-                  ))}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {quizzes.length > 0 && (
+                <div className="pt-4 space-y-3">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Quizzes</p>
+                  {quizzes.map(q => {
+                    const intento = q.intentos?.find(it => it.estudianteId === miId)
+                    const est = estadoVentana(q.fechaInicio, q.fechaLimite)
+                    const b = badgeVentana(est, intento ? intento.nota : null)
+                    return (
+                      <button key={q.id} onClick={() => abrirQuiz(q)}
+                        className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all text-left group">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">❓</div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-gray-800">{q.titulo}</h4>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {(q.preguntas?.length || 0) + ' preguntas · '}
+                              {est === 'antes' ? ('🔒 Abre: ' + fmt(q.fechaInicio)) : est === 'cerrado' ? ('Cerró: ' + fmt(q.fechaLimite)) : ('⏰ Cierra: ' + fmt(q.fechaLimite))}
+                            </p>
+                          </div>
+                          <span className={'text-xs px-3 py-1.5 rounded-full font-semibold border flex-shrink-0 ' + b.cls}>{b.txt}</span>
+                          <span className="text-gray-300 group-hover:text-purple-400 text-lg">→</span>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -385,7 +482,8 @@ export default function StudentCursos() {
             </div>
 
             <div className="flex gap-2 flex-wrap">
-                  {[...(actActual.soloForo ? [] : ['contenido', 'entregar']), ...(actActual.foro ? ['foro'] : [])].map(t => (                <button key={t} onClick={() => setTab(t)}
+              {[...(actActual.soloForo ? [] : ['contenido', 'entregar']), ...(actActual.foro ? ['foro'] : [])].map(t => (
+                <button key={t} onClick={() => setTab(t)}
                   className={'px-5 py-2.5 rounded-xl font-semibold text-sm transition-all border ' + (tab === t ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:text-purple-700')}>
                   {t === 'contenido' && '📋 Contenido'}
                   {t === 'entregar' && (miEntrega?.entregado ? '✅ Mi entrega' : '📤 Entregar')}
@@ -497,7 +595,6 @@ export default function StudentCursos() {
                   {actActual.foro.fechaLimite && <p className="text-purple-500 text-xs mt-0.5">{'⏰ ' + fmt(actActual.foro.fechaLimite)}</p>}
                 </div>
 
-                {/* Mi respuesta */}
                 {(miRespForo?.respuesta || foroEnviado) ? (
                   <div className="bg-green-50 rounded-xl p-4 border border-green-200">
                     <p className="font-semibold text-green-700 text-sm mb-1">✅ Tu respuesta:</p>
@@ -513,7 +610,6 @@ export default function StudentCursos() {
                   </div>
                 )}
 
-                {/* Respuestas de los demas */}
                 {(() => {
                   const otras = (actActual.foro.respuestas || []).filter(r => r.respuesta && r.estudianteId !== miId)
                   if (otras.length === 0) return null
@@ -551,10 +647,29 @@ export default function StudentCursos() {
                   <div className="flex-1">
                     <h3 className="font-bold text-gray-800 text-lg mb-1">{foroActual.titulo}</h3>
                     {foroActual.descripcion && <p className="text-gray-500 text-sm">{foroActual.descripcion}</p>}
-                    {foroActual.fechaLimite && <p className="text-xs text-gray-400 mt-2">{'⏰ Cierra: ' + fmt(foroActual.fechaLimite)}</p>}
+                    <div className="flex gap-2 flex-wrap mt-2">
+                      {foroActual.fechaInicio && <span className="text-xs px-3 py-1 rounded-lg border bg-purple-50 text-purple-600 border-purple-100">{'📅 Abre: ' + fmt(foroActual.fechaInicio)}</span>}
+                      {foroActual.fechaLimite && <span className="text-xs px-3 py-1 rounded-lg border bg-orange-50 text-orange-600 border-orange-100">{'⏰ Cierra: ' + fmt(foroActual.fechaLimite)}</span>}
+                    </div>
                   </div>
                 </div>
               </div>
+
+              {/* Aviso de estado */}
+              {estadoForo === 'antes' && (
+                <div className="bg-blue-50 rounded-2xl p-8 border border-blue-200 text-center">
+                  <span className="text-5xl">🔒</span>
+                  <p className="text-blue-700 font-bold mt-3 text-lg">El foro aún no está disponible</p>
+                  <p className="text-blue-500 text-sm mt-1">{'Abre el ' + fmt(foroActual.fechaInicio)}</p>
+                </div>
+              )}
+              {estadoForo === 'cerrado' && !miPub && (
+                <div className="bg-red-50 rounded-2xl p-8 border border-red-200 text-center">
+                  <span className="text-5xl">⏰</span>
+                  <p className="text-red-700 font-bold mt-3 text-lg">El foro ya cerró</p>
+                  <p className="text-red-500 text-sm mt-1">Ya no se pueden agregar participaciones</p>
+                </div>
+              )}
 
               {/* Mi participacion */}
               {miPub ? (
@@ -571,7 +686,9 @@ export default function StudentCursos() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <p className="font-semibold text-green-700 text-sm">✅ Tu participación:</p>
-                        <button onClick={() => { setEditPubId(miPub.id); setEditPubTexto(miPub.texto) }} className="text-purple-600 text-xs font-semibold hover:underline">✏️ Editar</button>
+                        {estadoForo === 'abierto' && (
+                          <button onClick={() => { setEditPubId(miPub.id); setEditPubTexto(miPub.texto) }} className="text-purple-600 text-xs font-semibold hover:underline">✏️ Editar</button>
+                        )}
                       </div>
                       <p className="text-gray-700 text-sm whitespace-pre-wrap">{miPub.texto}</p>
                       {miPub.comentarios?.length > 0 && (
@@ -587,13 +704,13 @@ export default function StudentCursos() {
                     </div>
                   )}
                 </div>
-              ) : (
+              ) : estadoForo === 'abierto' ? (
                 <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
                   <h3 className="font-bold text-gray-800 text-sm">Tu participación</h3>
                   <textarea value={pubTexto} onChange={e => setPubTexto(e.target.value)} placeholder="Escribe tu participación..." rows={4} className={inp} />
                   <button onClick={publicarEnForo} disabled={!pubTexto.trim()} className="w-full bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-md disabled:opacity-40">💬 Publicar</button>
                 </div>
-              )}
+              ) : null}
 
               {/* Participaciones de otros */}
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Participaciones de compañeros ({otras.length})</p>
@@ -626,12 +743,14 @@ export default function StudentCursos() {
                             </div>
                           )}
 
-                          <div className="flex gap-2 mt-3">
-                            <input value={comentTemp[pub.id] || ''} onChange={e => setComentTemp(p => ({ ...p, [pub.id]: e.target.value }))}
-                              placeholder="Responder..." className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
-                              onKeyDown={e => { if (e.key === 'Enter') enviarComentario(pub.id) }} />
-                            <button onClick={() => enviarComentario(pub.id)} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700">Enviar</button>
-                          </div>
+                          {estadoForo === 'abierto' && (
+                            <div className="flex gap-2 mt-3">
+                              <input value={comentTemp[pub.id] || ''} onChange={e => setComentTemp(p => ({ ...p, [pub.id]: e.target.value }))}
+                                placeholder="Responder..." className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
+                                onKeyDown={e => { if (e.key === 'Enter') enviarComentario(pub.id) }} />
+                              <button onClick={() => enviarComentario(pub.id)} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700">Enviar</button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -641,6 +760,96 @@ export default function StudentCursos() {
             </div>
           )
         })()}
+
+        {/* RESPONDER QUIZ */}
+        {vista === 'quiz' && quizActual && (
+          <div className="space-y-5 max-w-3xl">
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <span className="text-3xl">❓</span>
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-800 text-lg mb-1">{quizActual.titulo}</h3>
+                  {quizActual.descripcion && <p className="text-gray-500 text-sm">{quizActual.descripcion}</p>}
+                  <p className="text-xs text-gray-400 mt-2">{(quizActual.preguntas?.length || 0) + ' preguntas · maximo 2 intentos'}</p>
+                  <div className="flex gap-2 flex-wrap mt-2">
+                    {quizActual.fechaInicio && <span className="text-xs px-3 py-1 rounded-lg border bg-purple-50 text-purple-600 border-purple-100">{'📅 Abre: ' + fmt(quizActual.fechaInicio)}</span>}
+                    {quizActual.fechaLimite && <span className="text-xs px-3 py-1 rounded-lg border bg-orange-50 text-orange-600 border-orange-100">{'⏰ Cierra: ' + fmt(quizActual.fechaLimite)}</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {estadoQuiz === 'antes' ? (
+              <div className="bg-blue-50 rounded-2xl p-8 border border-blue-200 text-center">
+                <span className="text-5xl">🔒</span>
+                <p className="text-blue-700 font-bold mt-3 text-lg">El quiz aún no está disponible</p>
+                <p className="text-blue-500 text-sm mt-1">{'Abre el ' + fmt(quizActual.fechaInicio)}</p>
+              </div>
+            ) : estadoQuiz === 'cerrado' && !miIntentoQuiz ? (
+              <div className="bg-red-50 rounded-2xl p-8 border border-red-200 text-center">
+                <span className="text-5xl">⏰</span>
+                <p className="text-red-700 font-bold mt-3 text-lg">El quiz ya cerró</p>
+                <p className="text-red-500 text-sm mt-1">No alcanzaste a responderlo</p>
+              </div>
+            ) : resultadoQuiz ? (
+              <div className="bg-white rounded-2xl p-8 shadow-sm text-center space-y-4">
+                <span className="text-6xl">{resultadoQuiz.nota >= 7 ? '🎉' : '📚'}</span>
+                <div>
+                  <p className="text-gray-500 text-sm">Tu calificacion en este intento</p>
+                  <p className={'text-6xl font-black ' + (resultadoQuiz.nota >= 7 ? 'text-green-600' : 'text-red-500')}>{resultadoQuiz.nota}</p>
+                  <p className="text-gray-400 text-sm">{'Acertaste ' + resultadoQuiz.aciertos + ' de ' + resultadoQuiz.total}</p>
+                </div>
+                <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                  <p className="text-sm text-purple-700 font-semibold">{'Mejor nota: ' + resultadoQuiz.mejorNota + '/10'}</p>
+                  <p className="text-xs text-purple-500 mt-0.5">{'Intentos usados: ' + resultadoQuiz.intentos + '/2'}</p>
+                </div>
+                {resultadoQuiz.intentos < 2 && estadoQuiz === 'abierto' ? (
+                  <button onClick={() => { setResultadoQuiz(null); setRespuestasQuiz({}) }}
+                    className="w-full bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 shadow-md">
+                    🔁 Reintentar (te queda 1 intento)
+                  </button>
+                ) : (
+                  <p className="text-gray-400 text-sm">Se guarda tu mejor nota.</p>
+                )}
+              </div>
+            ) : miIntentoQuiz && (miIntentoQuiz.intentos >= 2 || estadoQuiz === 'cerrado') ? (
+              <div className="bg-white rounded-2xl p-8 shadow-sm text-center space-y-3">
+                <span className="text-5xl">✅</span>
+                <p className="text-gray-700 font-bold text-lg">Ya completaste este quiz</p>
+                <div className="bg-purple-50 rounded-xl p-5 border border-purple-100 inline-block">
+                  <p className="text-gray-500 text-sm">Tu mejor nota</p>
+                  <p className={'text-5xl font-black ' + (miIntentoQuiz.nota >= 7 ? 'text-green-600' : 'text-red-500')}>{miIntentoQuiz.nota}</p>
+                  <p className="text-gray-400 text-xs">{'Intentos: ' + miIntentoQuiz.intentos + '/2'}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {miIntentoQuiz && (
+                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 text-sm text-blue-700">
+                    {'Ya hiciste este quiz una vez (nota: ' + miIntentoQuiz.nota + '/10). Te queda 1 intento, se guardará la mejor nota.'}
+                  </div>
+                )}
+                {quizActual.preguntas?.map((p, i) => (
+                  <div key={p.id} className="bg-white rounded-2xl p-5 shadow-sm">
+                    <p className="font-semibold text-gray-800 mb-3">{(i + 1) + '. ' + p.texto}</p>
+                    <div className="space-y-2">
+                      {p.opciones.map((op, j) => (
+                        <label key={j} className={'flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ' + (respuestasQuiz[i] === j ? 'border-purple-400 bg-purple-50' : 'border-gray-100 hover:border-purple-200')}>
+                          <input type="radio" name={'preg-' + i} checked={respuestasQuiz[i] === j} onChange={() => setRespuestasQuiz(prev => ({ ...prev, [i]: j }))} className="w-4 h-4 accent-purple-600" />
+                          <span className="text-sm text-gray-700">{op}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <button onClick={enviarQuiz} disabled={enviandoQuiz}
+                  className="w-full bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 shadow-md disabled:opacity-40">
+                  {enviandoQuiz ? '⏳ Enviando...' : '✅ Enviar quiz'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Layout>
   )
