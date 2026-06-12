@@ -58,6 +58,19 @@ export default function Estudiantes() {
       )
     : []
 
+  // Planilla de notas: agrupada por materia, para no mezclar actividades de materias distintas
+  const materiasPlanilla = gradoActual
+    ? (gradoActual.materias || []).map(m => ({
+        id: m.id,
+        nombre: m.nombre,
+        actividades: (m.actividades || []).map(a => ({
+          ...a,
+          tipo: a.soloForo ? 'foro' : (a.quiz ? 'quiz' : 'actividad')
+        })),
+        estudiantes: (m.inscripciones || []).map(insc => insc.estudiante).filter(Boolean)
+      })).filter(m => m.actividades.length > 0 && m.estudiantes.length > 0)
+    : []
+
   const estudiantesFiltrados = estudiantesGrado.filter(e =>
     e.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
     e.email.toLowerCase().includes(busqueda.toLowerCase())
@@ -285,93 +298,101 @@ export default function Estudiantes() {
 
             {/* TAB: Planilla de notas */}
             {tab === 'notas' && (
-              <div>
-                {todasActividades.length === 0 || estudiantesGrado.length === 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {materiasPlanilla.length === 0 ? (
                   <Card style={{ padding: '56px 24px', textAlign: 'center' }}>
                     <span style={{ fontSize: 48 }}>📋</span>
                     <p style={{ color: 'rgba(156,163,175,0.7)', marginTop: 12, fontWeight: 600 }}>Sin datos para mostrar</p>
                   </Card>
                 ) : (
-                  <div style={{ background: '#1C1535', borderRadius: 16, border: '1px solid rgba(124,58,237,0.2)', overflow: 'auto', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
-                    <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', minWidth: 700 }}>
-                      <thead>
-                        <tr style={{ background: 'rgba(124,58,237,0.18)', borderBottom: '2px solid rgba(124,58,237,0.3)' }}>
-                          <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#A78BFA', position: 'sticky', left: 0, background: 'rgba(28,14,60,0.98)', minWidth: 36, borderRight: '1px solid rgba(124,58,237,0.15)' }}>Id</th>
-                          <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 700, color: '#A78BFA', minWidth: 160, borderRight: '1px solid rgba(124,58,237,0.15)' }}>Apellidos</th>
-                          <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 700, color: '#A78BFA', minWidth: 130, borderRight: '1px solid rgba(124,58,237,0.15)' }}>Nombres</th>
-                          {todasActividades.slice(0, 10).map((act, i) => (
-                            <th key={act.id || i} style={{ textAlign: 'center', padding: '8px 6px', fontWeight: 700, color: act.tipo === 'quiz' ? '#FBBF24' : act.tipo === 'foro' ? '#60A5FA' : '#A78BFA', minWidth: 56, borderRight: '1px solid rgba(124,58,237,0.1)' }}>
-                              <div style={{ fontSize: 11, fontWeight: 800 }}>{act.tipo === 'quiz' ? '❓' : act.tipo === 'foro' ? '💬' : '📝'} A{i+1}</div>
-                              <div style={{ fontSize: 9, color: 'rgba(167,139,250,0.5)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 52 }}>{act.titulo}</div>
-                            </th>
-                          ))}
-                          <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#FBBF24', minWidth: 50, borderLeft: '2px solid rgba(124,58,237,0.3)', borderRight: '1px solid rgba(124,58,237,0.1)' }}>20%</th>
-                          <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#60A5FA', minWidth: 50, borderRight: '1px solid rgba(124,58,237,0.1)' }}>Cons</th>
-                          <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#34D399', minWidth: 50, borderRight: '1px solid rgba(124,58,237,0.1)' }}>Full</th>
-                          <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 800, color: '#fff', minWidth: 54, background: 'rgba(124,58,237,0.25)' }}>DEF</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {estudiantesGrado.map((est, idx) => {
-                          const color = AVATARES[idx % AVATARES.length]
-                          const notasData = todasActividades.slice(0, 10).map(act => {
-                            const ent = act.entregas?.find(e => e.estudianteId === est.id)
-                            return { nota: ent?.calificacion ?? null, actId: act.id }
-                          })
-                          const notasReales = notasData.filter(n => n.nota != null).map(n => n.nota)
-                          const prom = notasReales.length > 0 ? notasReales.reduce((a, b) => a + b, 0) / notasReales.length : null
-                          const pct20 = prom ? (prom * 0.2).toFixed(1) : null
-                          const def_ = prom ? prom.toFixed(1) : null
-                          const defColor = !def_ ? 'rgba(156,163,175,0.4)' : def_ >= 7 ? '#34D399' : def_ >= 5 ? '#FBBF24' : '#F87171'
-                          const partes = est.nombre.trim().split(' ')
-                          const apellidos = partes.slice(0,2).join(' ').toUpperCase()
-                          const nombres = partes.slice(2).join(' ') || partes[0]
-                          return (
-                            <tr key={est.id}
-                              style={{ borderBottom: '1px solid rgba(124,58,237,0.08)', transition: 'background .1s' }}
-                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,58,237,0.07)'}
-                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                              <td style={{ textAlign: 'center', padding: '10px 8px', color: 'rgba(156,163,175,0.5)', fontSize: 11, position: 'sticky', left: 0, background: '#1C1535', borderRight: '1px solid rgba(124,58,237,0.12)' }}>{idx+1}</td>
-                              <td style={{ padding: '10px 12px', fontWeight: 700, color: '#E5E7EB', borderRight: '1px solid rgba(124,58,237,0.1)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 10, flexShrink: 0 }}>{est.nombre.charAt(0)}</div>
-                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{apellidos}</span>
-                                </div>
-                              </td>
-                              <td style={{ padding: '10px 12px', color: '#D1D5DB', borderRight: '1px solid rgba(124,58,237,0.1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{nombres}</td>
-                              {notasData.map((nd, i) => {
-                                const { nota, actId } = nd
-                                const nc = nota == null ? 'rgba(156,163,175,0.25)' : nota >= 7 ? '#34D399' : nota >= 5 ? '#FBBF24' : '#F87171'
-                                const nb = nota == null ? 'transparent' : nota >= 7 ? 'rgba(52,211,153,0.12)' : nota >= 5 ? 'rgba(251,191,36,0.12)' : 'rgba(248,113,113,0.12)'
+                  materiasPlanilla.map(materiaData => {
+                    const acts = materiaData.actividades.slice(0, 10)
+                    return (
+                      <div key={materiaData.id}>
+                        <h3 style={{ fontSize: 14, fontWeight: 800, color: '#A78BFA', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: 8 }}>📖 {materiaData.nombre}</h3>
+                        <div style={{ background: '#1C1535', borderRadius: 16, border: '1px solid rgba(124,58,237,0.2)', overflow: 'auto', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
+                          <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', minWidth: 700 }}>
+                            <thead>
+                              <tr style={{ background: 'rgba(124,58,237,0.18)', borderBottom: '2px solid rgba(124,58,237,0.3)' }}>
+                                <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#A78BFA', position: 'sticky', left: 0, background: 'rgba(28,14,60,0.98)', minWidth: 36, borderRight: '1px solid rgba(124,58,237,0.15)' }}>Id</th>
+                                <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 700, color: '#A78BFA', minWidth: 160, borderRight: '1px solid rgba(124,58,237,0.15)' }}>Apellidos</th>
+                                <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 700, color: '#A78BFA', minWidth: 130, borderRight: '1px solid rgba(124,58,237,0.15)' }}>Nombres</th>
+                                {acts.map((act, i) => (
+                                  <th key={act.id || i} style={{ textAlign: 'center', padding: '8px 6px', fontWeight: 700, color: act.tipo === 'quiz' ? '#FBBF24' : act.tipo === 'foro' ? '#60A5FA' : '#A78BFA', minWidth: 56, borderRight: '1px solid rgba(124,58,237,0.1)' }}>
+                                    <div style={{ fontSize: 11, fontWeight: 800 }}>{act.tipo === 'quiz' ? '❓' : act.tipo === 'foro' ? '💬' : '📝'} A{i+1}</div>
+                                    <div style={{ fontSize: 9, color: 'rgba(167,139,250,0.5)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 52 }}>{act.titulo}</div>
+                                  </th>
+                                ))}
+                                <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#FBBF24', minWidth: 50, borderLeft: '2px solid rgba(124,58,237,0.3)', borderRight: '1px solid rgba(124,58,237,0.1)' }}>20%</th>
+                                <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#60A5FA', minWidth: 50, borderRight: '1px solid rgba(124,58,237,0.1)' }}>Cons</th>
+                                <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#34D399', minWidth: 50, borderRight: '1px solid rgba(124,58,237,0.1)' }}>Full</th>
+                                <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 800, color: '#fff', minWidth: 54, background: 'rgba(124,58,237,0.25)' }}>DEF</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {materiaData.estudiantes.map((est, idx) => {
+                                const color = AVATARES[idx % AVATARES.length]
+                                const notasData = acts.map(act => {
+                                  const ent = act.entregas?.find(e => e.estudianteId === est.id)
+                                  return { nota: ent?.calificacion ?? null, actId: act.id }
+                                })
+                                const notasReales = notasData.filter(n => n.nota != null).map(n => n.nota)
+                                const prom = notasReales.length > 0 ? notasReales.reduce((a, b) => a + b, 0) / notasReales.length : null
+                                const pct20 = prom ? (prom * 0.2).toFixed(1) : null
+                                const def_ = prom ? prom.toFixed(1) : null
+                                const defColor = !def_ ? 'rgba(156,163,175,0.4)' : def_ >= 7 ? '#34D399' : def_ >= 5 ? '#FBBF24' : '#F87171'
+                                const partes = est.nombre.trim().split(' ')
+                                const apellidos = partes.slice(0,2).join(' ').toUpperCase()
+                                const nombres = partes.slice(2).join(' ') || partes[0]
                                 return (
-                                  <td key={i} style={{ textAlign: 'center', padding: '10px 4px', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
-                                    <button onClick={() => navigate('/profesor/cursos')} title={nota != null ? 'Nota: ' + nota : 'Sin entregar'}
-                                      style={{ background: nb, border: nota != null ? '1px solid ' + nc + '40' : '1px dashed rgba(124,58,237,0.2)', borderRadius: 8, padding: '4px 6px', cursor: 'pointer', minWidth: 38, display: 'inline-block', transition: 'transform .1s' }}
-                                      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                                      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-                                      <span style={{ fontWeight: 800, fontSize: 12, color: nc }}>{nota != null ? nota : '—'}</span>
-                                    </button>
-                                  </td>
+                                  <tr key={est.id}
+                                    style={{ borderBottom: '1px solid rgba(124,58,237,0.08)', transition: 'background .1s' }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,58,237,0.07)'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <td style={{ textAlign: 'center', padding: '10px 8px', color: 'rgba(156,163,175,0.5)', fontSize: 11, position: 'sticky', left: 0, background: '#1C1535', borderRight: '1px solid rgba(124,58,237,0.12)' }}>{idx+1}</td>
+                                    <td style={{ padding: '10px 12px', fontWeight: 700, color: '#E5E7EB', borderRight: '1px solid rgba(124,58,237,0.1)' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 10, flexShrink: 0 }}>{est.nombre.charAt(0)}</div>
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{apellidos}</span>
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: '10px 12px', color: '#D1D5DB', borderRight: '1px solid rgba(124,58,237,0.1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{nombres}</td>
+                                    {notasData.map((nd, i) => {
+                                      const { nota } = nd
+                                      const nc = nota == null ? 'rgba(156,163,175,0.25)' : nota >= 7 ? '#34D399' : nota >= 5 ? '#FBBF24' : '#F87171'
+                                      const nb = nota == null ? 'transparent' : nota >= 7 ? 'rgba(52,211,153,0.12)' : nota >= 5 ? 'rgba(251,191,36,0.12)' : 'rgba(248,113,113,0.12)'
+                                      return (
+                                        <td key={i} style={{ textAlign: 'center', padding: '10px 4px', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
+                                          <button onClick={() => navigate('/profesor/cursos')} title={nota != null ? 'Nota: ' + nota : 'Sin entregar'}
+                                            style={{ background: nb, border: nota != null ? '1px solid ' + nc + '40' : '1px dashed rgba(124,58,237,0.2)', borderRadius: 8, padding: '4px 6px', cursor: 'pointer', minWidth: 38, display: 'inline-block', transition: 'transform .1s' }}
+                                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                                            <span style={{ fontWeight: 800, fontSize: 12, color: nc }}>{nota != null ? nota : '—'}</span>
+                                          </button>
+                                        </td>
+                                      )
+                                    })}
+                                    <td style={{ textAlign: 'center', padding: '10px 6px', borderLeft: '2px solid rgba(124,58,237,0.2)', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
+                                      <span style={{ fontWeight: 700, fontSize: 12, color: pct20 ? '#FBBF24' : 'rgba(156,163,175,0.3)' }}>{pct20 || '—'}</span>
+                                    </td>
+                                    <td style={{ textAlign: 'center', padding: '10px 6px', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
+                                      <span style={{ fontWeight: 700, fontSize: 12, color: def_ ? '#60A5FA' : 'rgba(156,163,175,0.3)' }}>{def_ || '—'}</span>
+                                    </td>
+                                    <td style={{ textAlign: 'center', padding: '10px 6px', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
+                                      <span style={{ fontWeight: 700, fontSize: 12, color: def_ ? '#34D399' : 'rgba(156,163,175,0.3)' }}>{def_ || '—'}</span>
+                                    </td>
+                                    <td style={{ textAlign: 'center', padding: '10px 6px', background: def_ ? 'rgba(124,58,237,0.08)' : 'transparent' }}>
+                                      <span style={{ fontWeight: 900, fontSize: 14, color: defColor }}>{def_ || '—'}</span>
+                                    </td>
+                                  </tr>
                                 )
                               })}
-                              <td style={{ textAlign: 'center', padding: '10px 6px', borderLeft: '2px solid rgba(124,58,237,0.2)', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
-                                <span style={{ fontWeight: 700, fontSize: 12, color: pct20 ? '#FBBF24' : 'rgba(156,163,175,0.3)' }}>{pct20 || '—'}</span>
-                              </td>
-                              <td style={{ textAlign: 'center', padding: '10px 6px', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
-                                <span style={{ fontWeight: 700, fontSize: 12, color: def_ ? '#60A5FA' : 'rgba(156,163,175,0.3)' }}>{def_ || '—'}</span>
-                              </td>
-                              <td style={{ textAlign: 'center', padding: '10px 6px', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
-                                <span style={{ fontWeight: 700, fontSize: 12, color: def_ ? '#34D399' : 'rgba(156,163,175,0.3)' }}>{def_ || '—'}</span>
-                              </td>
-                              <td style={{ textAlign: 'center', padding: '10px 6px', background: def_ ? 'rgba(124,58,237,0.08)' : 'transparent' }}>
-                                <span style={{ fontWeight: 900, fontSize: 14, color: defColor }}>{def_ || '—'}</span>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )
+                  })
                 )}
               </div>
             )}
