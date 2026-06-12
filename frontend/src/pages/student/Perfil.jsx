@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
 import { authService } from '../../services/api'
+import PasswordInput from '../../components/common/PasswordInput'
 
 const NAV = [
   { icon: '🏠', label: 'Inicio', path: '/estudiante/dashboard' },
@@ -235,7 +236,7 @@ const handleCambiarPass = async () => {
                 ].map(f => (
                   <div key={f.key}>
                     <label className="text-xs font-semibold text-[#A78BFA] mb-1 block">{f.label}</label>
-                    <input type="password" value={passData[f.key]}
+                    <PasswordInput value={passData[f.key]}
                       onChange={e => setPassData(p => ({ ...p, [f.key]: e.target.value }))}
                       placeholder="••••••••"
                       className="w-full border border-[rgba(124,58,237,0.3)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 bg-[#1C1535] transition-all" />

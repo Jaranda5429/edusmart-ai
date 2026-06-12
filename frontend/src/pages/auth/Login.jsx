@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { authService } from '../../services/api'
 import { useAuth } from '../../context/AuthContext'
+import PasswordInput from '../../components/common/PasswordInput'
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
@@ -147,8 +148,8 @@ export default function Login() {
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8 }}>
                   Contrasena
                 </label>
-                <input
-                  type="password" value={form.password}
+                <PasswordInput
+                  value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
                   placeholder="••••••••"
                   style={inp} required

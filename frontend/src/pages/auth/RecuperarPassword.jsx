@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { authService } from '../../services/api'
+import PasswordInput from '../../components/common/PasswordInput'
 
 export default function RecuperarPassword() {
   const [paso, setPaso] = useState(1)
@@ -151,8 +152,8 @@ export default function RecuperarPassword() {
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8 }}>
                   Nueva contrasena
                 </label>
-                <input
-                  type="password" value={nueva}
+                <PasswordInput
+                  value={nueva}
                   onChange={e => setNueva(e.target.value)}
                   placeholder="••••••••"
                   style={inp} required autoFocus
@@ -163,8 +164,8 @@ export default function RecuperarPassword() {
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'rgba(167,139,250,0.8)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 8 }}>
                   Confirmar contrasena
                 </label>
-                <input
-                  type="password" value={confirmar}
+                <PasswordInput
+                  value={confirmar}
                   onChange={e => setConfirmar(e.target.value)}
                   placeholder="••••••••"
                   style={inp} required

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { authService } from '../../services/api'
+import PasswordInput from '../../components/common/PasswordInput'
 
 const PLANES = [
   { id: 'mensual', label: 'Mensual', precioFmt: '$70.000', periodo: 'por mes', desc: 'Acceso completo 1 mes', popular: false, ahorro: null },
@@ -204,8 +205,8 @@ export default function Register() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div><label style={lbl}>Nombre completo</label><input value={form.nombre} onChange={upd('nombre')} placeholder="Tu nombre" style={inp} onFocus={focIn} onBlur={focOut} autoFocus /></div>
                   <div><label style={lbl}>Email</label><input type="email" value={form.email} onChange={upd('email')} placeholder="tu@email.com" style={inp} onFocus={focIn} onBlur={focOut} /></div>
-                  <div><label style={lbl}>Contrasena</label><input type="password" value={form.password} onChange={upd('password')} placeholder="Min 6 caracteres" style={inp} onFocus={focIn} onBlur={focOut} /></div>
-                  <div><label style={lbl}>Confirmar contrasena</label><input type="password" value={form.confirmar} onChange={upd('confirmar')} placeholder="Repite tu contrasena" style={inp} onFocus={focIn} onBlur={focOut} onKeyDown={e => e.key === 'Enter' && irPaso3()} /></div>
+                  <div><label style={lbl}>Contrasena</label><PasswordInput value={form.password} onChange={upd('password')} placeholder="Min 6 caracteres" style={inp} onFocus={focIn} onBlur={focOut} /></div>
+                  <div><label style={lbl}>Confirmar contrasena</label><PasswordInput value={form.confirmar} onChange={upd('confirmar')} placeholder="Repite tu contrasena" style={inp} onFocus={focIn} onBlur={focOut} onKeyDown={e => e.key === 'Enter' && irPaso3()} /></div>
                 </div>
                 <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
                   <button onClick={() => { setPaso(1); setError('') }}

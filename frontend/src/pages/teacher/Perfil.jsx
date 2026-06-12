@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import { useAuth } from '../../context/AuthContext'
 import { authService } from '../../services/api'
+import PasswordInput from '../../components/common/PasswordInput'
 
 const NAV = [
   { icon: '🏠', label: 'Inicio', path: '/profesor/dashboard' },
@@ -291,8 +292,7 @@ const handleCambiarPass = async () => {
                 ].map(f => (
                   <div key={f.key}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(167,139,250,0.8)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>{f.label}</label>
-                    <input
-                      type="password"
+                    <PasswordInput
                       value={passData[f.key]}
                       onChange={e => setPassData(p => ({ ...p, [f.key]: e.target.value }))}
                       placeholder={f.placeholder}
