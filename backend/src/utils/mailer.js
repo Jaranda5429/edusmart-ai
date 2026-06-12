@@ -2,8 +2,9 @@ const nodemailer = require('nodemailer')
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
+  requireTLS: true,
   family: 4, // forzar IPv4 (en Windows, IPv6 a Gmail suele fallar con ECONNREFUSED)
   auth: {
     user: process.env.EMAIL_USER,
