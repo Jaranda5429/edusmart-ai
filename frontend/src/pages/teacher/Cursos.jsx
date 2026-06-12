@@ -5,6 +5,7 @@ import Layout from '../../components/Layout'
 import { useSearchParams } from 'react-router-dom'
 import { foroService, quizService } from '../../services/api'
 import { subirContenido } from '../../services/supabase'
+import { toBogotaISO, toDatetimeLocal, fmtBogota } from '../../utils/dates'
 
 const NAV = [
   { icon: '🏠', label: 'Inicio', path: '/profesor/dashboard' },
@@ -199,18 +200,15 @@ export default function TeacherCursos() {
   const crearActividad = async () => {
     if (!nuevaAct.titulo || !nuevaAct.fechaLimite) return
     try {
-      await agregarActividad(periodoSel.id, gradoSel.id, materiaSel.id, nuevaAct)
+      await agregarActividad(periodoSel.id, gradoSel.id, materiaSel.id, {
+        ...nuevaAct,
+        fechaInicio: toBogotaISO(nuevaAct.fechaInicio),
+        fechaLimite: toBogotaISO(nuevaAct.fechaLimite),
+        foroFechaLimite: toBogotaISO(nuevaAct.foroFechaLimite),
+      })
       setNuevaAct({ titulo: '', descripcion: '', fechaInicio: '', fechaLimite: '', contenidos: [], foroActivo: false, foroTema: '', foroFechaLimite: '' })
       setShowModalAct(false)
     } catch { alert('Error creando actividad') }
-  }
-
-  const fmtInput = iso => {
-    if (!iso) return ''
-    const d = new Date(iso)
-    const off = d.getTimezoneOffset()
-    const local = new Date(d.getTime() - off * 60000)
-    return local.toISOString().slice(0, 16)
   }
 
   const abrirEditarAct = (act, e) => {
@@ -219,8 +217,8 @@ export default function TeacherCursos() {
     setFormEditAct({
       titulo: act.titulo || '',
       descripcion: act.descripcion || '',
-      fechaInicio: fmtInput(act.fechaInicio),
-      fechaLimite: fmtInput(act.fechaLimite),
+      fechaInicio: toDatetimeLocal(act.fechaInicio),
+      fechaLimite: toDatetimeLocal(act.fechaLimite),
       contenidos: (act.contenidos || []).map(c => ({
         tipo: c.tipo, label: c.label, icon: c.icono || c.icon || '📄',
         texto: c.texto || null, url: c.url || null, nombre: c.nombre || null
@@ -231,7 +229,11 @@ export default function TeacherCursos() {
   const guardarEditAct = async () => {
     if (!formEditAct.titulo || !formEditAct.fechaLimite) return
     try {
-      await editarActividad(materiaSel.id, editandoAct.id, formEditAct)
+      await editarActividad(materiaSel.id, editandoAct.id, {
+        ...formEditAct,
+        fechaInicio: toBogotaISO(formEditAct.fechaInicio),
+        fechaLimite: toBogotaISO(formEditAct.fechaLimite),
+      })
       setEditandoAct(null)
     } catch { alert('Error editando actividad') }
   }
@@ -254,13 +256,14 @@ export default function TeacherCursos() {
   }
 
   const abrirNuevoForo = () => { setEditandoForo(null); setFormForo({ titulo: '', descripcion: '', fechaInicio: '', fechaLimite: '' }); setShowModalForo(true) }
-  const abrirEditarForo = (f, e) => { e.stopPropagation(); setEditandoForo(f); setFormForo({ titulo: f.titulo, descripcion: f.descripcion || '', fechaInicio: fmtInput(f.fechaInicio), fechaLimite: fmtInput(f.fechaLimite) }); setShowModalForo(true) }
+  const abrirEditarForo = (f, e) => { e.stopPropagation(); setEditandoForo(f); setFormForo({ titulo: f.titulo, descripcion: f.descripcion || '', fechaInicio: toDatetimeLocal(f.fechaInicio), fechaLimite: toDatetimeLocal(f.fechaLimite) }); setShowModalForo(true) }
 
   const guardarForo = async () => {
     if (!formForo.titulo.trim()) return
     try {
-      if (editandoForo) await foroService.editarForo(editandoForo.id, formForo)
-      else await foroService.crearForo({ ...formForo, materiaId: materiaSel.id })
+      const datos = { ...formForo, fechaInicio: toBogotaISO(formForo.fechaInicio), fechaLimite: toBogotaISO(formForo.fechaLimite) }
+      if (editandoForo) await foroService.editarForo(editandoForo.id, datos)
+      else await foroService.crearForo({ ...datos, materiaId: materiaSel.id })
       setShowModalForo(false)
       await cargarForos(materiaSel.id)
     } catch { alert('Error guardando foro') }
@@ -325,7 +328,13 @@ export default function TeacherCursos() {
     if (!formQuiz.titulo.trim()) { alert('Ponle un titulo al quiz'); return }
     if (preguntasQuiz.length === 0) { alert('Agrega al menos una pregunta'); return }
     try {
-      await quizService.crearQuiz({ ...formQuiz, materiaId: materiaSel.id, preguntas: preguntasQuiz })
+      await quizService.crearQuiz({
+        ...formQuiz,
+        fechaInicio: toBogotaISO(formQuiz.fechaInicio),
+        fechaLimite: toBogotaISO(formQuiz.fechaLimite),
+        materiaId: materiaSel.id,
+        preguntas: preguntasQuiz,
+      })
       setShowModalQuiz(false)
       await cargarQuizzes(materiaSel.id)
     } catch { alert('Error creando quiz') }
@@ -363,10 +372,7 @@ export default function TeacherCursos() {
     setVista(mapa[vista] || 'periodos')
   }
 
-  const fmt = iso => {
-    if (!iso) return ''
-    return new Date(iso).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-  }
+  const fmt = fmtBogota
 
   const COLS = [
     { bg: 'bg-[#1C1535]', border: 'border-purple-800', text: 'text-purple-700', btn: 'bg-purple-600 hover:bg-purple-700' },

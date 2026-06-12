@@ -388,6 +388,15 @@ const entregarActividad = async (req, res) => {
     const { actividadId } = req.params
     const { texto, archivoUrl, archivoNombre } = req.body
 
+    const actividad = await prisma.actividad.findUnique({ where: { id: parseInt(actividadId) } })
+    if (!actividad) return res.status(404).json({ message: 'Actividad no encontrada' })
+
+    const ahora = new Date()
+    if (actividad.fechaInicio && ahora < new Date(actividad.fechaInicio))
+      return res.status(403).json({ message: 'La actividad aun no esta disponible' })
+    if (actividad.fechaLimite && ahora > new Date(actividad.fechaLimite))
+      return res.status(403).json({ message: 'La actividad ya vencio' })
+
     const entrega = await prisma.entrega.upsert({
       where: {
         estudianteId_actividadId: {
@@ -479,6 +488,14 @@ const responderForo = async (req, res) => {
       include: { actividad: true }
     })
     if (!foro) return res.status(404).json({ message: 'Esta actividad no tiene foro' })
+
+    const ahora = new Date()
+    const fechaInicio = foro.actividad.fechaInicio
+    const fechaLimite = foro.fechaLimite || foro.actividad.fechaLimite
+    if (fechaInicio && ahora < new Date(fechaInicio))
+      return res.status(403).json({ message: 'El foro aun no esta disponible' })
+    if (fechaLimite && ahora > new Date(fechaLimite))
+      return res.status(403).json({ message: 'El foro ya cerro' })
 
     // Guardar / actualizar la respuesta del foro
     const resp = await prisma.respuestaForo.upsert({

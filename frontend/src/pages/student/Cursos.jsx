@@ -5,6 +5,7 @@ import { academicService, foroService, quizService } from '../../services/api'
 import Layout from '../../components/Layout'
 import { subirArchivo } from '../../services/supabase'
 import { useSearchParams } from 'react-router-dom'
+import { fmtBogota } from '../../utils/dates'
 
 const NAV = [
   { icon: '🏠', label: 'Inicio', path: '/estudiante/dashboard' },
@@ -21,10 +22,7 @@ const COLS = [
   { bg: 'bg-[#1C1535]', border: 'border-[rgba(245,158,11,0.3)]', text: 'text-[#FBBF24]' },
 ]
 
-const fmt = iso => {
-  if (!iso) return ''
-  return new Date(iso).toLocaleString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-}
+const fmt = fmtBogota
 
 // Estado de ventana de tiempo: 'antes' | 'abierto' | 'cerrado'
 const estadoVentana = (fechaInicio, fechaLimite) => {
