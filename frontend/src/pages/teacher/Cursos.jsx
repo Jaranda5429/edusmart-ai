@@ -1261,12 +1261,12 @@ export default function TeacherCursos() {
 
               <div className="bg-purple-50 rounded-xl p-5 space-y-3 border border-purple-100">
                 <p className="text-sm font-semibold text-purple-800">Nueva pregunta</p>
-                <input value={pregTemp.texto} onChange={e => setPregTemp(p => ({ ...p, texto: e.target.value }))} placeholder="Escribe la pregunta..." className={inp} />
+                <input value={pregTemp.texto} onChange={e => setPregTemp(p => ({ ...p, texto: e.target.value }))} placeholder="Escribe la pregunta..." className={inp} style={{ color: '#111827' }} />
                 <p className="text-xs text-purple-700 font-semibold">Opciones (marca la correcta)</p>
                 {pregTemp.opciones.map((o, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <input type="radio" name="correcta" checked={pregTemp.correcta === i} onChange={() => setPregTemp(p => ({ ...p, correcta: i }))} className="w-4 h-4 accent-purple-600 flex-shrink-0" />
-                    <input value={o} onChange={e => setPregTemp(p => { const ops = [...p.opciones]; ops[i] = e.target.value; return { ...p, opciones: ops } })} placeholder={'Opcion ' + (i + 1)} className={inp} />
+                    <input value={o} onChange={e => setPregTemp(p => { const ops = [...p.opciones]; ops[i] = e.target.value; return { ...p, opciones: ops } })} placeholder={'Opcion ' + (i + 1)} className={inp} style={{ color: '#111827' }} />
                   </div>
                 ))}
                 <button onClick={agregarPregunta} className="w-full bg-purple-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-purple-700">+ Agregar pregunta</button>
