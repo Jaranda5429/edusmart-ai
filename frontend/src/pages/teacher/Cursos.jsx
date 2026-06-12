@@ -808,7 +808,7 @@ export default function TeacherCursos() {
                 <h3 className="font-bold text-[#E5E7EB] mb-4">Asignar calificacion</h3>
                 <div className="flex items-center gap-4">
                   <input type="number" min="0" max="10" step="0.5" value={notaTemp} onChange={e => setNotaTemp(e.target.value)}
-                    placeholder="0.0" className="w-32 border-2 border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-center text-2xl font-bold focus:outline-none focus:border-purple-400 transition-all" />
+                    placeholder="0.0" className="w-32 border-2 border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-center text-2xl font-bold bg-white text-gray-900 focus:outline-none focus:border-purple-400 transition-all" />
                   <span className="text-[rgba(156,163,175,0.5)]">/ 10</span>
                   <button onClick={guardarNota} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-md">Guardar Calificacion</button>
                 </div>
