@@ -966,7 +966,7 @@ export default function TeacherCursos() {
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowModalPeriodo(false)} style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#D1D5DB", padding: "12px", borderRadius: 12, fontFamily: "Poppins,sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Cancelar</button>
               <button onClick={guardarPeriodo} disabled={!formPeriodo.nombre.trim()} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md text-sm disabled:opacity-40">
-                {editandoPeriodo ? 'Guardar cambios' : 'Crear Periodo'}
+                {editandoPeriodo ? 'Guardar cambios' : 'Crear'}
               </button>
             </div>
           </div>
