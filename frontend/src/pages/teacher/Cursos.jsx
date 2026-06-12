@@ -950,7 +950,7 @@ export default function TeacherCursos() {
               <div>
                 <label className={lbl}>Tipo de periodo</label>
                 <select value={formPeriodo.tipo} onChange={e => setFormPeriodo(p => ({ ...p, tipo: e.target.value }))} className={inp} style={{ background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(124,58,237,0.3)", color: "#E5E7EB" }}>
-                  {TIPO_PERIODO.map(t => <option key={t} value={t}>{t}</option>)}
+                  {TIPO_PERIODO.map(t => <option key={t} value={t} style={{ color: '#1F2937' }}>{t}</option>)}
                 </select>
               </div>
               <div>
