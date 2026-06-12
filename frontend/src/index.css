@@ -1,16 +1,20 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 * { box-sizing: border-box; }
-body { font-family: 'Poppins', sans-serif; -webkit-font-smoothing: antialiased; }
+body {
+  font-family: 'Poppins', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #0F0A1E;
+  color: #E5E7EB;
+}
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #DDD6FE; border-radius: 10px; }
-
+::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.4); border-radius: 10px; }
 .no-scroll::-webkit-scrollbar { display: none; }
 .no-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
@@ -19,4 +23,3 @@ body { font-family: 'Poppins', sans-serif; -webkit-font-smoothing: antialiased; 
   to   { opacity: 1; transform: translateY(0); }
 }
 .fade-in { animation: fadeIn 0.15s ease-out; }
-.bg-white { border: 1px solid rgba(139, 92, 246, 0.35) !important; }

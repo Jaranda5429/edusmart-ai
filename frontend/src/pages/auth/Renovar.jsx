@@ -2,14 +2,15 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { authService } from '../../services/api'
+import fondito from '../../assets/fondito.png'
 
 const PLANES = [
   { id: 'mensual', label: 'Mensual', precioFmt: '$70.000', periodo: 'por mes', ahorro: null, popular: false },
   { id: 'anual', label: 'Anual', precioFmt: '$700.000', periodo: 'por año', ahorro: 'Ahorras $140.000', popular: true },
 ]
 
-const inp = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 bg-gray-50 focus:bg-white transition-all'
-const lbl = 'block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5'
+const inp = 'w-full border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 text-[#E5E7EB] transition-all'
+const lbl = 'block text-xs font-bold text-[rgba(156,163,175,0.7)] uppercase tracking-wider mb-1.5'
 
 export default function Renovar() {
   const { login } = useAuth()
@@ -70,8 +71,18 @@ export default function Renovar() {
   const fmt = iso => iso ? new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : ''
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg,#EDE7FF,#D6E8FF)' }}>
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <div className="fixed inset-0 -z-10" style={{
+        backgroundImage: `url(${fondito})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+        filter: 'blur(3px)',
+        transform: 'scale(1.1)'
+      }} />
+      <div className="fixed inset-0 -z-10 bg-[rgba(28,21,53,0.4)]" />
+      <div style={{ background: "#1C1535", borderRadius: 20, border: "1px solid rgba(124,58,237,0.3)", boxShadow: "0 20px 60px rgba(0,0,0,0.7)" }} className=" w-full max-w-md overflow-hidden">
 
         <div className="text-center px-8 pt-8 pb-5" style={{ background: 'linear-gradient(135deg,#4C1D95,#7C3AED)' }}>
           <div className="text-4xl mb-1">🔄</div>
@@ -89,15 +100,15 @@ export default function Renovar() {
           {error && <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-sm font-medium">{error}</div>}
 
           <div className="bg-purple-50 rounded-2xl p-4 border border-purple-200">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Elige tu plan</p>
+            <p className="text-xs font-bold text-[rgba(156,163,175,0.7)] uppercase tracking-wider mb-3">Elige tu plan</p>
             <div className="grid grid-cols-2 gap-2">
               {PLANES.map(p => (
                 <button key={p.id} onClick={() => setPlan(p.id)}
-                  className={'p-4 rounded-xl border-2 text-left transition-all relative ' + (plan === p.id ? 'border-purple-500 bg-white shadow-md' : 'border-purple-200')}>
+                  className={'p-4 rounded-xl border-2 text-left transition-all relative ' + (plan === p.id ? 'border-purple-500 bg-[rgba(124,58,237,0.15)]' : 'border-purple-200')}>
                   {p.popular && <span className="absolute -top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-1.5 py-0.5 rounded-full">Popular</span>}
-                  <p className={'font-bold text-sm ' + (plan === p.id ? 'text-purple-700' : 'text-gray-600')}>{p.label}</p>
-                  <p className={'font-black text-xl ' + (plan === p.id ? 'text-purple-700' : 'text-gray-500')}>{p.precioFmt}</p>
-                  <p className="text-xs text-gray-400">{p.periodo}</p>
+                  <p className={'font-bold text-sm ' + (plan === p.id ? 'text-purple-700' : 'text-[#9CA3AF]')}>{p.label}</p>
+                  <p className={'font-black text-xl ' + (plan === p.id ? 'text-purple-700' : 'text-[rgba(156,163,175,0.7)]')}>{p.precioFmt}</p>
+                  <p className="text-xs text-[rgba(156,163,175,0.5)]">{p.periodo}</p>
                   {p.ahorro && <p className="text-xs text-green-600 font-semibold mt-1">{p.ahorro}</p>}
                 </button>
               ))}
@@ -110,11 +121,11 @@ export default function Renovar() {
             <div><label className={lbl}>Vence (MM/AA)</label><input value={card.vence} onChange={e => setCard(p => ({ ...p, vence: fmtDate(e.target.value) }))} placeholder="MM/AA" maxLength={5} className={inp} /></div>
             <div><label className={lbl}>CVV</label><input value={card.cvv} onChange={e => setCard(p => ({ ...p, cvv: e.target.value.replace(/\D/g, '').slice(0, 4) }))} placeholder="123" maxLength={4} className={inp} /></div>
           </div>
-          <p className="text-xs text-gray-400 text-center">🔒 Pago seguro simulado</p>
+          <p className="text-xs text-[rgba(156,163,175,0.5)] text-center">🔒 Pago seguro simulado</p>
 
           <div className="flex gap-3">
             <button onClick={() => { sessionStorage.removeItem('renovar_token'); sessionStorage.removeItem('renovar_usuario'); navigate('/login') }}
-              className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold text-sm hover:bg-gray-50">Cancelar</button>
+              className="flex-1 border border-[rgba(124,58,237,0.2)] text-[#9CA3AF] py-3 rounded-xl font-semibold text-sm hover:bg-[rgba(124,58,237,0.1)]">Cancelar</button>
             <button onClick={renovar} disabled={loading}
               className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-bold hover:bg-purple-700 shadow-md text-sm disabled:opacity-40">
               {loading ? 'Procesando...' : 'Renovar ' + PLANES.find(p => p.id === plan)?.precioFmt}

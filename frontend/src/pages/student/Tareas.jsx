@@ -10,7 +10,6 @@ const NAV = [
   { icon: '📝', label: 'Tareas', path: '/estudiante/tareas' },
   { icon: '📈', label: 'Progreso', path: '/estudiante/progreso' },
   { icon: '🎮', label: 'Juegos', path: '/estudiante/juegos' },
-  { icon: '🔔', label: 'Notificaciones', path: '/estudiante/notificaciones' },
 ]
 
 const fmt = iso => {
@@ -63,11 +62,11 @@ export default function StudentTareas() {
   }
 
   const badge = (t) => {
-    if (t.estado === 'no_disponible') return { txt: '🔒 No disponible', cls: 'bg-blue-50 text-blue-600 border-blue-200' }
-    if (t.estado === 'vencida') return { txt: 'Vencida', cls: 'bg-red-50 text-red-600 border-red-200' }
-    if (t.estado === 'calificada') return { txt: t.entrega.calificacion + '/10', cls: 'bg-green-50 text-green-700 border-green-200' }
-    if (t.estado === 'entregada') return { txt: 'Entregada', cls: 'bg-purple-50 text-purple-700 border-purple-200' }
-    return { txt: 'Pendiente', cls: 'bg-orange-50 text-orange-600 border-orange-200' }
+    if (t.estado === 'no_disponible') return { txt: '🔒 No disponible', cls: 'bg-[rgba(59,130,246,0.1)] text-[#60A5FA] border-[rgba(59,130,246,0.3)]' }
+    if (t.estado === 'vencida') return { txt: 'Vencida', cls: 'bg-[rgba(239,68,68,0.1)] text-[#F87171] border-[rgba(239,68,68,0.3)]' }
+    if (t.estado === 'calificada') return { txt: t.entrega.calificacion + '/10', cls: 'bg-[rgba(16,185,129,0.1)] text-[#34D399] border-[rgba(16,185,129,0.3)]' }
+    if (t.estado === 'entregada') return { txt: 'Entregada', cls: 'bg-[rgba(124,58,237,0.12)] text-[#A78BFA] border-[rgba(124,58,237,0.3)]' }
+    return { txt: 'Pendiente', cls: 'bg-[rgba(245,158,11,0.12)] text-[#FBBF24] border-[rgba(245,158,11,0.3)]' }
   }
 
   const FILTROS = [
@@ -80,29 +79,29 @@ export default function StudentTareas() {
   return (
     <Layout rol="ESTUDIANTE" navItems={NAV}>
       <div className="max-w-4xl mx-auto px-5 py-6 space-y-6">
-        <div>
-          <h2 className="text-2xl font-black text-gray-900">Mis Tareas 📝</h2>
-          <p className="text-gray-400 text-sm mt-0.5">Todas tus actividades en un solo lugar</p>
+        <div style={{ background: "rgba(28,21,53,0.8)", backdropFilter: "blur(8px)" }} className=" px-4 py-2 rounded-xl inline-block">
+          <h2 className="text-2xl font-black text-[#F3F4F6]">Mis Tareas </h2>
+          <p className="text-[#E5E7EB] text-base mt-0.5">Todas tus actividades en un solo lugar</p>
         </div>
 
         <div className="flex gap-2 flex-wrap">
           {FILTROS.map(f => (
             <button key={f.id} onClick={() => setFiltro(f.id)}
-              className={'px-4 py-2.5 rounded-xl font-semibold text-sm transition-all border flex items-center gap-2 ' + (filtro === f.id ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300')}>
+              className={'px-4 py-2.5 rounded-xl font-semibold text-sm transition-all border flex items-center gap-2 ' + (filtro === f.id ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-[rgba(124,58,237,0.08)] text-[rgba(167,139,250,0.8)] border-[rgba(124,58,237,0.2)] hover:border-[rgba(124,58,237,0.5)] hover:bg-[rgba(124,58,237,0.15)]')}>
               <span>{f.icon}</span>
               <span>{f.label}</span>
-              <span className={'text-xs px-1.5 py-0.5 rounded-full ' + (filtro === f.id ? 'bg-white/20' : 'bg-gray-100')}>{conteos[f.id]}</span>
+              <span className={'text-xs px-1.5 py-0.5 rounded-full ' + (filtro === f.id ? 'bg-[rgba(255,255,255,0.08)]' : 'bg-[rgba(255,255,255,0.06)]')}>{conteos[f.id]}</span>
             </button>
           ))}
         </div>
 
         {filtradas.length === 0 ? (
-          <div className="bg-white rounded-2xl p-14 text-center shadow-sm">
+          <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-14 text-center shadow-none">
             <span className="text-5xl">{filtro === 'todas' ? '📭' : '🎉'}</span>
-            <p className="text-gray-500 mt-3 font-semibold">
+            <p className="text-[rgba(156,163,175,0.7)] mt-3 font-semibold">
               {filtro === 'todas' ? 'Sin tareas aun' : 'Nada en esta categoria'}
             </p>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className="text-[rgba(156,163,175,0.5)] text-sm mt-1">
               {filtro === 'todas' ? 'Inscribete en materias para ver tus tareas' : 'Cambia de filtro para ver mas'}
             </p>
           </div>
@@ -114,14 +113,23 @@ export default function StudentTareas() {
               const urgente = t.estado === 'pendiente' && dias >= 0 && dias <= 2
               return (
                 <button key={t.id} onClick={() => navigate('/estudiante/cursos')}
-                  className={'w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all text-left flex items-center gap-4 border-2 ' + (urgente ? 'border-orange-300' : 'border-transparent hover:border-purple-200')}>
-                  <div className={'w-12 h-12 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 ' + (urgente ? 'bg-orange-100' : 'bg-purple-50')}>
+                  style={{
+                    width: '100%', background: urgente ? 'rgba(245,158,11,0.08)' : '#1C1535',
+                    borderRadius: 16, padding: '18px 20px', textAlign: 'left',
+                    display: 'flex', alignItems: 'center', gap: 16,
+                    border: urgente ? '1.5px solid rgba(245,158,11,0.35)' : '1px solid rgba(124,58,237,0.2)',
+                    cursor: 'pointer', transition: 'all .15s',
+                    borderLeft: urgente ? '4px solid #F59E0B' : '4px solid rgba(124,58,237,0.4)'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = urgente ? 'rgba(245,158,11,0.6)' : 'rgba(124,58,237,0.5)'}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = urgente ? 'rgba(245,158,11,0.35)' : 'rgba(124,58,237,0.2)'}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0, background: urgente ? 'rgba(245,158,11,0.2)' : 'rgba(124,58,237,0.15)' }}>
                     {urgente ? '⚠️' : '📝'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-800 truncate">{t.titulo}</h4>
-                    <p className="text-xs text-gray-400 mt-0.5">{(t.materiaName || '') + ' · ' + (t.gradoName || '')}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{'⏰ ' + fmt(t.fechaLimite)}</p>
+                    <h4 className="font-bold text-[#E5E7EB] truncate">{t.titulo}</h4>
+                    <p className="text-xs text-[rgba(156,163,175,0.5)] mt-0.5">{(t.materiaName || '') + ' · ' + (t.gradoName || '')}</p>
+                    <p className="text-xs text-[rgba(156,163,175,0.5)] mt-0.5">{'⏰ ' + fmt(t.fechaLimite)}</p>
                   </div>
                   <span className={'text-xs px-3 py-1.5 rounded-full font-semibold border flex-shrink-0 ' + b.cls}>{b.txt}</span>
                 </button>

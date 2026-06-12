@@ -12,14 +12,13 @@ const NAV = [
   { icon: '📝', label: 'Tareas', path: '/estudiante/tareas' },
   { icon: '📈', label: 'Progreso', path: '/estudiante/progreso' },
   { icon: '🎮', label: 'Juegos', path: '/estudiante/juegos' },
-  { icon: '🔔', label: 'Notificaciones', path: '/estudiante/notificaciones' },
 ]
 
 const COLS = [
-  { bg: 'bg-[#EDE7FF]', border: 'border-purple-200', text: 'text-purple-700' },
-  { bg: 'bg-[#D6E8FF]', border: 'border-blue-200',   text: 'text-blue-700'   },
-  { bg: 'bg-[#DDF7E9]', border: 'border-green-200',  text: 'text-green-700'  },
-  { bg: 'bg-[#FFF4CC]', border: 'border-yellow-200', text: 'text-yellow-700' },
+  { bg: 'bg-[#1C1535]', border: 'border-[rgba(124,58,237,0.3)]', text: 'text-purple-700' },
+  { bg: 'bg-[#1C1535]', border: 'border-[rgba(59,130,246,0.3)]',   text: 'text-[#60A5FA]'   },
+  { bg: 'bg-[#1C1535]', border: 'border-[rgba(16,185,129,0.3)]',  text: 'text-[#34D399]'  },
+  { bg: 'bg-[#1C1535]', border: 'border-[rgba(245,158,11,0.3)]', text: 'text-[#FBBF24]' },
 ]
 
 const fmt = iso => {
@@ -208,19 +207,19 @@ export default function StudentCursos() {
   const estadoBadge = (act) => {
     const ent = act.entregas?.find(e => e.estudianteId === miId)
     const noDisp = act.fechaInicio && new Date(act.fechaInicio) > new Date()
-    if (noDisp) return { txt: '🔒 No disponible', cls: 'bg-blue-50 text-blue-600 border-blue-200' }
-    if (new Date(act.fechaLimite) < new Date() && (!ent || !ent.entregado)) return { txt: 'Vencida', cls: 'bg-red-50 text-red-600 border-red-200' }
-    if (ent?.entregado && ent?.calificacion != null) return { txt: ent.calificacion + '/10', cls: 'bg-green-50 text-green-700 border-green-200' }
-    if (ent?.entregado) return { txt: 'Entregada', cls: 'bg-purple-50 text-purple-700 border-purple-200' }
-    return { txt: 'Pendiente', cls: 'bg-orange-50 text-orange-600 border-orange-200' }
+    if (noDisp) return { txt: '🔒 No disponible', cls: 'bg-[rgba(59,130,246,0.1)] text-[#60A5FA] border-[rgba(59,130,246,0.3)]' }
+    if (new Date(act.fechaLimite) < new Date() && (!ent || !ent.entregado)) return { txt: 'Vencida', cls: 'bg-[rgba(239,68,68,0.1)] text-[#F87171] border-[rgba(239,68,68,0.3)]' }
+    if (ent?.entregado && ent?.calificacion != null) return { txt: ent.calificacion + '/10', cls: 'bg-[rgba(16,185,129,0.1)] text-[#34D399] border-[rgba(16,185,129,0.3)]' }
+    if (ent?.entregado) return { txt: 'Entregada', cls: 'bg-[rgba(124,58,237,0.12)] text-purple-700 border-[rgba(124,58,237,0.3)]' }
+    return { txt: 'Pendiente', cls: 'bg-orange-50 text-orange-600 border-[rgba(245,158,11,0.3)]' }
   }
 
   // Badge de estado para foro/quiz segun ventana de tiempo
   const badgeVentana = (estado, intento) => {
-    if (intento != null) return { txt: intento + '/10', cls: 'bg-green-50 text-green-700 border-green-200' }
-    if (estado === 'antes') return { txt: '🔒 No disponible', cls: 'bg-blue-50 text-blue-600 border-blue-200' }
-    if (estado === 'cerrado') return { txt: 'Cerrado', cls: 'bg-red-50 text-red-600 border-red-200' }
-    return { txt: 'Abierto', cls: 'bg-orange-50 text-orange-600 border-orange-200' }
+    if (intento != null) return { txt: intento + '/10', cls: 'bg-[rgba(16,185,129,0.1)] text-[#34D399] border-[rgba(16,185,129,0.3)]' }
+    if (estado === 'antes') return { txt: '🔒 No disponible', cls: 'bg-[rgba(59,130,246,0.1)] text-[#60A5FA] border-[rgba(59,130,246,0.3)]' }
+    if (estado === 'cerrado') return { txt: 'Cerrado', cls: 'bg-[rgba(239,68,68,0.1)] text-[#F87171] border-[rgba(239,68,68,0.3)]' }
+    return { txt: 'Abierto', cls: 'bg-orange-50 text-orange-600 border-[rgba(245,158,11,0.3)]' }
   }
 
   const enviarEntrega = async () => {
@@ -267,7 +266,8 @@ export default function StudentCursos() {
   }
   }, [inscId, todasInscripciones])
 
-  const inp = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none transition-all'
+  const inp = 'w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none transition-all'
+  const inpStyle = { background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(124,58,237,0.3)', color: '#E5E7EB', fontFamily: 'Poppins,sans-serif' }
 
   return (
     <Layout rol="ESTUDIANTE" navItems={NAV}>
@@ -276,13 +276,13 @@ export default function StudentCursos() {
         <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
           <div className="flex items-center gap-3">
             {vista !== 'inscripciones' && (
-              <button onClick={volver} className="w-9 h-9 bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-purple-50 hover:text-purple-600 transition-all shadow-sm">←</button>
+              <button onClick={volver} className="w-9 h-9 bg-[#1C1535] rounded-xl border border-[rgba(124,58,237,0.2)] flex items-center justify-center text-[rgba(156,163,175,0.7)] hover:bg-[rgba(124,58,237,0.12)] hover:text-purple-600 transition-all shadow-none">←</button>
             )}
-            <div>
-              <h2 className="text-xl font-black text-gray-900">
+            <div style={{ background: "rgba(28,21,53,0.8)", backdropFilter: "blur(8px)" }} className=" px-4 py-2 rounded-xl">
+              <h2 className="text-xl font-black text-[#F3F4F6]">
                 <span>{vista === 'inscripciones' ? 'Mis Cursos' : vista === 'actividades' ? (inscSel?.materiaName || '') : vista === 'foro' ? (foroActual?.titulo || 'Foro') : vista === 'quiz' ? (quizActual?.titulo || 'Quiz') : (actActual?.titulo || '')}</span>
               </h2>
-              <p className="text-gray-400 text-xs">
+              <p className="text-[#E5E7EB] text-sm">
                 <span>
                   {vista === 'inscripciones'
                     ? (misInscripciones.length + ' materia' + (misInscripciones.length !== 1 ? 's' : '') + ' inscrita' + (misInscripciones.length !== 1 ? 's' : ''))
@@ -295,11 +295,11 @@ export default function StudentCursos() {
           </div>
           {inscSel && vista !== 'inscripciones' && (
             <div className="flex items-center gap-1.5 text-xs">
-              <span className="bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg font-semibold">{inscSel.periodoName}</span>
+              <span className="bg-[rgba(124,58,237,0.15)] text-purple-700 px-2.5 py-1 rounded-lg font-semibold">{inscSel.periodoName}</span>
               <span className="text-gray-300">›</span>
-              <span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg font-semibold">{inscSel.gradoName}</span>
+              <span className="bg-[rgba(59,130,246,0.15)] text-[#60A5FA] px-2.5 py-1 rounded-lg font-semibold">{inscSel.gradoName}</span>
               <span className="text-gray-300">›</span>
-              <span className="bg-green-100 text-green-700 px-2.5 py-1 rounded-lg font-semibold">{inscSel.materiaName}</span>
+              <span className="bg-[rgba(16,185,129,0.15)] text-[#34D399] px-2.5 py-1 rounded-lg font-semibold">{inscSel.materiaName}</span>
             </div>
           )}
         </div>
@@ -307,15 +307,14 @@ export default function StudentCursos() {
         {/* INSCRIPCIONES */}
         {vista === 'inscripciones' && (
           misInscripciones.length === 0 ? (
-            <div className="bg-white rounded-2xl p-16 text-center shadow-sm">
+            <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-16 text-center shadow-none">
               <span className="text-6xl">🔑</span>
-              <h3 className="text-xl font-bold text-gray-800 mt-4 mb-2">Sin materias inscritas</h3>
-              <p className="text-gray-400 text-sm">Ve al Inicio e ingresa el codigo que te dio tu profesor</p>
+              <h3 className="text-xl font-bold text-[#E5E7EB] mt-4 mb-2">Sin materias inscritas</h3>
+              <p className="text-[rgba(156,163,175,0.5)] text-sm">Ve al Inicio e ingresa el codigo que te dio tu profesor</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-5">
               {misInscripciones.map((insc, i) => {
-                const c = COLS[i % COLS.length]
                 const acts = insc.materia?.actividades || []
                 const pendientes = acts.filter(act => {
                   const ent = act.entregas?.find(e => e.estudianteId === miId)
@@ -326,31 +325,48 @@ export default function StudentCursos() {
                   return ent?.calificacion != null ? [ent.calificacion] : []
                 })
                 const prom = califs.length > 0 ? (califs.reduce((a, b) => a + b, 0) / califs.length).toFixed(1) : null
+                const IMGS = [
+                  { bg: 'linear-gradient(135deg,#7C3AED,#A855F7)', accent: '#A78BFA' },
+                  { bg: 'linear-gradient(135deg,#0369A1,#38BDF8)', accent: '#60A5FA' },
+                  { bg: 'linear-gradient(135deg,#065F46,#34D399)',  accent: '#34D399' },
+                  { bg: 'linear-gradient(135deg,#B45309,#F59E0B)',  accent: '#FBBF24' },
+                ]
+                const col = IMGS[i % IMGS.length]
                 return (
-                  <button key={i} onClick={() => seleccionarInscripcion(insc)}
-                    className={c.bg + ' border-2 ' + c.border + ' rounded-2xl p-7 text-left hover:scale-[1.02] hover:shadow-lg transition-all shadow-sm group'}>
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="text-5xl">📖</span>
-                      {prom && (
-                        <div className="text-right">
-                          <p className={'font-bold text-2xl ' + c.text}>{prom}</p>
-                          <p className="text-gray-400 text-xs">promedio</p>
+                  <div key={i} className="relative group" style={{ borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', border: '1px solid rgba(124,58,237,0.25)', cursor: 'pointer' }}>
+                    <button onClick={() => seleccionarInscripcion(insc)} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'block' }}>
+                      {/* Imagen superior con gradiente */}
+                      <div style={{ background: col.bg, height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', right: -20, bottom: -20, width: 100, height: 100, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+                        <div style={{ position: 'absolute', left: -10, top: -10, width: 70, height: 70, borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
+                        <span style={{ fontSize: 52, filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))', position: 'relative', zIndex: 1 }}>
+                          {insc.materia?.icono || insc.materia?.icon || '📖'}
+                        </span>
+                        {prom && (
+                          <div style={{ position: 'absolute', top: 10, right: 12, textAlign: 'right', zIndex: 2 }}>
+                            <p style={{ fontWeight: 900, fontSize: 22, color: '#fff', margin: 0, lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>{prom}</p>
+                            <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', margin: 0, fontWeight: 600 }}>promedio</p>
+                          </div>
+                        )}
+                      </div>
+                      {/* Info inferior */}
+                      <div style={{ background: '#1C1535', padding: '14px 18px 16px' }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 800, color: '#E5E7EB', margin: '0 0 3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{insc.materiaName}</h3>
+                        <p style={{ fontSize: 12, color: 'rgba(156,163,175,0.65)', margin: '0 0 1px' }}>{insc.gradoName}</p>
+                        <p style={{ fontSize: 11, color: 'rgba(156,163,175,0.45)', margin: '0 0 10px' }}>{insc.periodoName}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: col.accent, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {acts.length + ' actividades'} <span>→</span>
+                          </span>
+                          {pendientes > 0 && (
+                            <span style={{ background: 'rgba(245,158,11,0.15)', color: '#FBBF24', fontSize: 11, padding: '3px 8px', borderRadius: 999, border: '1px solid rgba(245,158,11,0.3)', fontWeight: 700 }}>
+                              {'⚠️ ' + pendientes + ' pend.'}
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <h3 className={'text-xl font-bold ' + c.text + ' mb-1'}>{insc.materiaName}</h3>
-                    <p className="text-gray-500 text-sm">{insc.gradoName}</p>
-                    <p className="text-gray-400 text-xs mt-0.5">{insc.periodoName}</p>
-                    {pendientes > 0 && (
-                      <span className="mt-2 inline-flex items-center gap-1 bg-orange-100 text-orange-600 text-xs px-2.5 py-1 rounded-full border border-orange-200 font-semibold">
-                        {'⚠️ ' + pendientes + ' pendiente' + (pendientes > 1 ? 's' : '')}
-                      </span>
-                    )}
-                    <div className={'mt-3 flex items-center gap-2 ' + c.text + ' text-sm font-semibold'}>
-                      <span>{acts.length + ' actividades'}</span>
-                      <span className="group-hover:translate-x-1 transition-transform">→</span>
-                    </div>
-                  </button>
+                      </div>
+                    </button>
+                  </div>
                 )
               })}
             </div>
@@ -360,15 +376,15 @@ export default function StudentCursos() {
         {/* ACTIVIDADES */}
         {vista === 'actividades' && (
           loadingActs ? (
-            <div className="bg-white rounded-2xl p-14 text-center shadow-sm">
+            <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-14 text-center shadow-none">
               <div className="w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-gray-400 text-sm">Cargando actividades...</p>
+              <p className="text-[rgba(156,163,175,0.5)] text-sm">Cargando actividades...</p>
             </div>
           ) : actividades.length === 0 && foros.length === 0 && quizzes.length === 0 ? (
-            <div className="bg-white rounded-2xl p-14 text-center shadow-sm">
+            <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-14 text-center shadow-none">
               <span className="text-5xl">📭</span>
-              <p className="text-gray-500 mt-3 font-semibold">Sin actividades aun</p>
-              <p className="text-gray-400 text-sm mt-1">Tu profesor aun no ha creado actividades en esta materia</p>
+              <p className="text-[rgba(156,163,175,0.7)] mt-3 font-semibold">Sin actividades aun</p>
+              <p className="text-[rgba(156,163,175,0.5)] text-sm mt-1">Tu profesor aun no ha creado actividades en esta materia</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -377,15 +393,15 @@ export default function StudentCursos() {
                 const dias = Math.ceil((new Date(act.fechaLimite) - new Date()) / (1000 * 60 * 60 * 24))
                 return (
                   <button key={act.id} onClick={() => { setActividadSel(act); setTab('contenido'); setVista('actividad') }}
-                    className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all text-left group">
+                    className="w-full bg-[#1C1535] rounded-2xl p-5 shadow-none hover:shadow-md border-2 border-transparent hover:border-[rgba(124,58,237,0.3)] transition-all text-left group">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📝</div>
+                      <div className="w-12 h-12 bg-[rgba(124,58,237,0.12)] rounded-xl flex items-center justify-center text-2xl flex-shrink-0">📝</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-bold text-gray-800">{act.titulo}</h4>
-                          {act.foro && <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">💬 Foro</span>}
+                          <h4 className="font-bold text-[#E5E7EB]">{act.titulo}</h4>
+                          {act.foro && <span className="text-xs bg-[rgba(124,58,237,0.15)] text-purple-600 px-2 py-0.5 rounded-full">💬 Foro</span>}
                         </div>
-                        <div className="flex gap-3 text-xs text-gray-400">
+                        <div className="flex gap-3 text-xs text-[rgba(156,163,175,0.5)]">
                           {act.fechaInicio && new Date(act.fechaInicio) > new Date()
                             ? <span className="text-blue-500 font-semibold">{'🔒 Disponible: ' + fmt(act.fechaInicio)}</span>
                             : <span>{'⏰ Límite: ' + fmt(act.fechaLimite)}</span>
@@ -402,19 +418,19 @@ export default function StudentCursos() {
 
               {foros.length > 0 && (
                 <div className="pt-4 space-y-3">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Foros de discusión</p>
+                  <p className="text-xs font-semibold text-[rgba(156,163,175,0.5)] uppercase tracking-wider">Foros de discusión</p>
                   {foros.map(f => {
                     const est = estadoVentana(f.fechaInicio, f.fechaLimite)
                     const b = badgeVentana(est, null)
                     return (
                       <button key={f.id} onClick={() => abrirForo(f)}
-                        className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all text-left group">
+                        className="w-full bg-[#1C1535] rounded-2xl p-5 shadow-none hover:shadow-md border-2 border-transparent hover:border-[rgba(124,58,237,0.3)] transition-all text-left group">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">💬</div>
+                          <div className="w-12 h-12 bg-[rgba(124,58,237,0.12)] rounded-xl flex items-center justify-center text-2xl flex-shrink-0">💬</div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-800">{f.titulo}</h4>
-                            {f.descripcion && <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{f.descripcion}</p>}
-                            <p className="text-xs text-gray-400 mt-0.5">
+                            <h4 className="font-bold text-[#E5E7EB]">{f.titulo}</h4>
+                            {f.descripcion && <p className="text-xs text-[rgba(156,163,175,0.7)] line-clamp-1 mt-0.5">{f.descripcion}</p>}
+                            <p className="text-xs text-[rgba(156,163,175,0.5)] mt-0.5">
                               {est === 'antes' ? ('🔒 Abre: ' + fmt(f.fechaInicio)) : est === 'cerrado' ? ('Cerró: ' + fmt(f.fechaLimite)) : ('⏰ Cierra: ' + fmt(f.fechaLimite))}
                             </p>
                           </div>
@@ -429,19 +445,19 @@ export default function StudentCursos() {
 
               {quizzes.length > 0 && (
                 <div className="pt-4 space-y-3">
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Quizzes</p>
+                  <p className="text-xs font-semibold text-[rgba(156,163,175,0.5)] uppercase tracking-wider">Quizzes</p>
                   {quizzes.map(q => {
                     const intento = q.intentos?.find(it => it.estudianteId === miId)
                     const est = estadoVentana(q.fechaInicio, q.fechaLimite)
                     const b = badgeVentana(est, intento ? intento.nota : null)
                     return (
                       <button key={q.id} onClick={() => abrirQuiz(q)}
-                        className="w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md border-2 border-transparent hover:border-purple-200 transition-all text-left group">
+                        className="w-full bg-[#1C1535] rounded-2xl p-5 shadow-none hover:shadow-md border-2 border-transparent hover:border-[rgba(124,58,237,0.3)] transition-all text-left group">
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0">❓</div>
+                          <div className="w-12 h-12 bg-[rgba(124,58,237,0.12)] rounded-xl flex items-center justify-center text-2xl flex-shrink-0">❓</div>
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-bold text-gray-800">{q.titulo}</h4>
-                            <p className="text-xs text-gray-400 mt-0.5">
+                            <h4 className="font-bold text-[#E5E7EB]">{q.titulo}</h4>
+                            <p className="text-xs text-[rgba(156,163,175,0.5)] mt-0.5">
                               {(q.preguntas?.length || 0) + ' preguntas · '}
                               {est === 'antes' ? ('🔒 Abre: ' + fmt(q.fechaInicio)) : est === 'cerrado' ? ('Cerró: ' + fmt(q.fechaLimite)) : ('⏰ Cierra: ' + fmt(q.fechaLimite))}
                             </p>
@@ -461,20 +477,20 @@ export default function StudentCursos() {
         {/* DETALLE ACTIVIDAD */}
         {vista === 'actividad' && actActual && (
           <div className="space-y-5 max-w-3xl">
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-gray-800 text-lg mb-2">{actActual.titulo}</h3>
-              {actActual.descripcion && <p className="text-gray-500 text-sm mb-3">{actActual.descripcion}</p>}
+            <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-6 shadow-none">
+              <h3 className="font-bold text-[#E5E7EB] text-lg mb-2">{actActual.titulo}</h3>
+              {actActual.descripcion && <p className="text-[rgba(156,163,175,0.7)] text-sm mb-3">{actActual.descripcion}</p>}
               <div className="flex gap-2 flex-wrap">
                 {actActual.fechaInicio && (
-                  <span className={'text-xs px-3 py-1.5 rounded-lg border ' + (noDisponible ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-purple-50 text-purple-600 border-purple-100')}>
+                  <span className={'text-xs px-3 py-1.5 rounded-lg border ' + (noDisponible ? 'bg-[rgba(59,130,246,0.1)] text-[#60A5FA] border-[rgba(59,130,246,0.3)]' : 'bg-[rgba(124,58,237,0.12)] text-purple-600 border-purple-100')}>
                     {'📅 Inicio: ' + fmt(actActual.fechaInicio)}
                   </span>
                 )}
-                <span className={'text-xs px-3 py-1.5 rounded-lg border ' + (vencida && !miEntrega?.entregado ? 'bg-red-50 text-red-600 border-red-200' : 'bg-orange-50 text-orange-600 border-orange-100')}>
+                <span className={'text-xs px-3 py-1.5 rounded-lg border ' + (vencida && !miEntrega?.entregado ? 'bg-[rgba(239,68,68,0.1)] text-[#F87171] border-[rgba(239,68,68,0.3)]' : 'bg-orange-50 text-orange-600 border-orange-100')}>
                   {'⏰ Límite: ' + fmt(actActual.fechaLimite)}
                 </span>
                 {miEntrega?.calificacion != null && (
-                  <span className={'text-xs px-3 py-1.5 rounded-lg border font-bold ' + (miEntrega.calificacion >= 7 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-200')}>
+                  <span className={'text-xs px-3 py-1.5 rounded-lg border font-bold ' + (miEntrega.calificacion >= 7 ? 'bg-[rgba(16,185,129,0.1)] text-[#34D399] border-[rgba(16,185,129,0.3)]' : 'bg-[rgba(239,68,68,0.1)] text-[#F87171] border-[rgba(239,68,68,0.3)]')}>
                     {'⭐ Nota: ' + miEntrega.calificacion + '/10'}
                   </span>
                 )}
@@ -484,7 +500,7 @@ export default function StudentCursos() {
             <div className="flex gap-2 flex-wrap">
               {[...(actActual.soloForo ? [] : ['contenido', 'entregar']), ...(actActual.foro ? ['foro'] : [])].map(t => (
                 <button key={t} onClick={() => setTab(t)}
-                  className={'px-5 py-2.5 rounded-xl font-semibold text-sm transition-all border ' + (tab === t ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300 hover:text-purple-700')}>
+                  className={'px-5 py-2.5 rounded-xl font-semibold text-sm transition-all border ' + (tab === t ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-[rgba(124,58,237,0.08)] text-[rgba(167,139,250,0.7)] border-[rgba(124,58,237,0.2)] hover:border-[rgba(124,58,237,0.5)] hover:text-[#A78BFA]')}>
                   {t === 'contenido' && '📋 Contenido'}
                   {t === 'entregar' && (miEntrega?.entregado ? '✅ Mi entrega' : '📤 Entregar')}
                   {t === 'foro' && '💬 Foro'}
@@ -493,18 +509,18 @@ export default function StudentCursos() {
             </div>
 
             {tab === 'contenido' && (
-              <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100"><h3 className="font-bold text-gray-800">Material</h3></div>
+              <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className=" overflow-hidden">
+                <div className="px-6 py-4 border-b border-[rgba(124,58,237,0.15)]"><h3 className="font-bold text-[#E5E7EB]">Material</h3></div>
                 {!actActual.contenidos?.length ? (
-                  <div className="p-10 text-center text-gray-400">Sin contenido subido aun</div>
+                  <div className="p-10 text-center text-[rgba(156,163,175,0.5)]">Sin contenido subido aun</div>
                 ) : (
                   <div className="p-5 space-y-3">
                     {actActual.contenidos.map((c, i) => (
-                      <div key={i} className="flex items-start gap-4 p-4 bg-slate-50 rounded-xl border border-gray-100">
+                      <div key={i} className="flex items-start gap-4 p-4 bg-[rgba(124,58,237,0.06)] rounded-xl border border-[rgba(124,58,237,0.15)]">
                         <span className="text-2xl flex-shrink-0">{c.icono || c.icon || '📄'}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-800 text-sm">{c.label}</p>
-                          {c.texto && <p className="text-gray-600 text-sm mt-1 leading-relaxed">{c.texto}</p>}
+                          <p className="font-semibold text-[#E5E7EB] text-sm">{c.label}</p>
+                          {c.texto && <p className="text-[#9CA3AF] text-sm mt-1 leading-relaxed">{c.texto}</p>}
                           {c.url && <a href={c.url} target="_blank" rel="noreferrer" className="text-purple-600 text-sm hover:underline mt-1 block break-all">{c.nombre || c.url}</a>}
                         </div>
                       </div>
@@ -515,33 +531,33 @@ export default function StudentCursos() {
             )}
 
             {tab === 'entregar' && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
+              <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-6 shadow-none space-y-4">
                 {miEntrega?.entregado ? (
                   <div className="space-y-4">
-                    <div className="bg-green-50 rounded-xl p-5 border border-green-200 text-center">
-                      <p className="text-3xl font-black text-green-600">✅</p>
-                      <p className="text-green-700 font-bold mt-1">Tarea entregada</p>
+                    <div className="bg-[rgba(16,185,129,0.1)] rounded-xl p-5 border border-[rgba(16,185,129,0.3)] text-center">
+                      <p className="text-3xl font-black text-[#34D399]">✅</p>
+                      <p className="text-[#34D399] font-bold mt-1">Tarea entregada</p>
                     </div>
                     {miEntrega.calificacion != null ? (
-                      <div className="bg-purple-50 rounded-xl p-6 border border-purple-200 text-center">
-                        <p className="text-gray-500 text-sm mb-1">Tu calificacion</p>
-                        <p className={'text-6xl font-black ' + (miEntrega.calificacion >= 7 ? 'text-green-600' : 'text-red-500')}>{miEntrega.calificacion}</p>
-                        <p className="text-gray-400 text-sm">de 10</p>
+                      <div className="bg-[rgba(124,58,237,0.12)] rounded-xl p-6 border border-[rgba(124,58,237,0.3)] text-center">
+                        <p className="text-[rgba(156,163,175,0.7)] text-sm mb-1">Tu calificacion</p>
+                        <p className={'text-6xl font-black ' + (miEntrega.calificacion >= 7 ? 'text-[#34D399]' : 'text-[#F87171]')}>{miEntrega.calificacion}</p>
+                        <p className="text-[rgba(156,163,175,0.5)] text-sm">de 10</p>
                       </div>
                     ) : (
-                      <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 text-center">
-                        <p className="text-gray-500">⏳ Tu profesor aun no ha calificado</p>
+                      <div style={{ background: "rgba(124,58,237,0.06)" }} className="rounded-xl p-5 border border-[rgba(124,58,237,0.2)] text-center">
+                        <p className="text-[rgba(156,163,175,0.7)]">⏳ Tu profesor aun no ha calificado</p>
                       </div>
                     )}
                     {miEntrega.texto && (
-                      <div className="bg-slate-50 rounded-xl p-4 border border-gray-100">
-                        <p className="text-xs font-semibold text-gray-500 mb-2">Tu respuesta:</p>
-                        <p className="text-sm text-gray-700 leading-relaxed">{miEntrega.texto}</p>
+                      <div style={{ background: "rgba(124,58,237,0.06)" }} className="rounded-xl p-4 border border-[rgba(124,58,237,0.15)]">
+                        <p className="text-xs font-semibold text-[rgba(156,163,175,0.7)] mb-2">Tu respuesta:</p>
+                        <p className="text-sm text-[#D1D5DB] leading-relaxed">{miEntrega.texto}</p>
                       </div>
                     )}
                     {miEntrega.archivoUrl && (
                       <a href={miEntrega.archivoUrl} target="_blank" rel="noreferrer"
-                        className="flex items-center gap-3 bg-purple-50 rounded-xl p-4 border border-purple-200 hover:bg-purple-100 transition-colors">
+                        className="flex items-center gap-3 bg-[rgba(124,58,237,0.12)] rounded-xl p-4 border border-[rgba(124,58,237,0.3)] hover:bg-[rgba(124,58,237,0.15)] transition-colors">
                         <span className="text-2xl">📎</span>
                         <div>
                           <p className="text-sm font-semibold text-purple-700">{miEntrega.archivoNombre || 'Archivo adjunto'}</p>
@@ -551,9 +567,9 @@ export default function StudentCursos() {
                     )}
                   </div>
                 ) : noDisponible ? (
-                  <div className="bg-blue-50 rounded-xl p-12 border border-blue-200 text-center">
+                  <div className="bg-[rgba(59,130,246,0.1)] rounded-xl p-12 border border-[rgba(59,130,246,0.3)] text-center">
                     <span className="text-5xl">🔒</span>
-                    <p className="text-blue-700 font-bold mt-3 text-lg">Aun no disponible</p>
+                    <p className="text-[#60A5FA] font-bold mt-3 text-lg">Aun no disponible</p>
                     <p className="text-blue-500 text-sm mt-1">
                       {diasDisponible > 0
                         ? 'Disponible en ' + diasDisponible + ' dia' + (diasDisponible !== 1 ? 's' : '')
@@ -562,22 +578,22 @@ export default function StudentCursos() {
                     <p className="text-blue-400 text-xs mt-2">{fmt(actActual.fechaInicio)}</p>
                   </div>
                 ) : vencida ? (
-                  <div className="bg-red-50 rounded-xl p-12 border border-red-200 text-center">
+                  <div className="bg-[rgba(239,68,68,0.1)] rounded-xl p-12 border border-[rgba(239,68,68,0.3)] text-center">
                     <span className="text-5xl">❌</span>
                     <p className="text-red-700 font-bold mt-3 text-lg">Actividad vencida</p>
                   </div>
                 ) : entregaEnviada ? (
-                  <div className="bg-green-50 rounded-xl p-12 border border-green-200 text-center">
+                  <div className="bg-[rgba(16,185,129,0.1)] rounded-xl p-12 border border-[rgba(16,185,129,0.3)] text-center">
                     <span className="text-5xl">🎉</span>
-                    <p className="text-green-700 font-bold mt-3 text-lg">Entrega enviada</p>
+                    <p className="text-[#34D399] font-bold mt-3 text-lg">Entrega enviada</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    <h3 className="font-bold text-gray-800">📤 Entregar actividad</h3>
-                    <textarea value={textoEntrega} onChange={e => setTextoEntrega(e.target.value)} placeholder="Escribe tu respuesta aqui..." rows={5} className={inp} />
-                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-5 text-center cursor-pointer hover:border-purple-400 transition-colors" onClick={() => document.getElementById('fileEnt').click()}>
+                    <h3 className="font-bold text-[#E5E7EB]">📤 Entregar actividad</h3>
+                    <textarea value={textoEntrega} onChange={e => setTextoEntrega(e.target.value)} placeholder="Escribe tu respuesta aqui..." rows={5} className={inp} style={inpStyle} />
+                    <div className="border-2 border-dashed border-[rgba(124,58,237,0.25)] rounded-xl p-5 text-center cursor-pointer hover:border-purple-400 transition-colors" onClick={() => document.getElementById('fileEnt').click()}>
                       <input id="fileEnt" type="file" className="hidden" onChange={e => setArchivo(e.target.files[0])} />
-                      {archivo ? <p className="text-purple-600 font-semibold text-sm">{'✅ ' + archivo.name}</p> : <p className="text-gray-500 text-sm">📎 Adjuntar archivo (opcional)</p>}
+                      {archivo ? <p className="text-purple-600 font-semibold text-sm">{'✅ ' + archivo.name}</p> : <p className="text-[rgba(156,163,175,0.7)] text-sm">📎 Adjuntar archivo (opcional)</p>}
                     </div>
                     <button onClick={enviarEntrega} disabled={!textoEntrega.trim() && !archivo}
                       className="w-full bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-md disabled:opacity-40">
@@ -589,16 +605,16 @@ export default function StudentCursos() {
             )}
 
             {tab === 'foro' && actActual.foro && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4">
-                <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
+              <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-6 shadow-none space-y-4">
+                <div className="bg-[rgba(124,58,237,0.12)] rounded-xl p-4 border border-[rgba(124,58,237,0.3)]">
                   <h3 className="font-bold text-purple-800">{'💬 ' + actActual.foro.tema}</h3>
                   {actActual.foro.fechaLimite && <p className="text-purple-500 text-xs mt-0.5">{'⏰ ' + fmt(actActual.foro.fechaLimite)}</p>}
                 </div>
 
                 {(miRespForo?.respuesta || foroEnviado) ? (
-                  <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                    <p className="font-semibold text-green-700 text-sm mb-1">✅ Tu respuesta:</p>
-                    <p className="text-gray-700 text-sm">{miRespForo?.respuesta || respForo}</p>
+                  <div className="bg-[rgba(16,185,129,0.1)] rounded-xl p-4 border border-[rgba(16,185,129,0.3)]">
+                    <p className="font-semibold text-[#34D399] text-sm mb-1">✅ Tu respuesta:</p>
+                    <p className="text-[#D1D5DB] text-sm">{miRespForo?.respuesta || respForo}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -615,16 +631,16 @@ export default function StudentCursos() {
                   if (otras.length === 0) return null
                   return (
                     <div className="space-y-3 pt-2">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Participaciones ({otras.length})</p>
+                      <p className="text-xs font-semibold text-[rgba(156,163,175,0.5)] uppercase tracking-wider">Participaciones ({otras.length})</p>
                       {otras.map((r, i) => (
-                        <div key={i} className="bg-slate-50 rounded-xl p-4 border border-gray-100">
+                        <div key={i} style={{ background: "rgba(124,58,237,0.06)" }} className="rounded-xl p-4 border border-[rgba(124,58,237,0.15)]">
                           <div className="flex items-center gap-2 mb-2">
-                            <div className="w-7 h-7 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 text-xs font-bold">
+                            <div className="w-7 h-7 bg-[rgba(124,58,237,0.15)] rounded-full flex items-center justify-center text-purple-700 text-xs font-bold">
                               {r.estudiante?.nombre?.charAt(0)?.toUpperCase() || '?'}
                             </div>
-                            <span className="font-semibold text-sm text-gray-800">{r.estudiante?.nombre || 'Estudiante'}</span>
+                            <span className="font-semibold text-sm text-[#E5E7EB]">{r.estudiante?.nombre || 'Estudiante'}</span>
                           </div>
-                          <p className="text-gray-700 text-sm">{r.respuesta}</p>
+                          <p className="text-[#D1D5DB] text-sm">{r.respuesta}</p>
                         </div>
                       ))}
                     </div>
@@ -641,14 +657,14 @@ export default function StudentCursos() {
           const otras = (foroActual.publicaciones || []).filter(p => p.estudianteId !== miId)
           return (
             <div className="space-y-5 max-w-3xl">
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-6 shadow-none">
                 <div className="flex items-start gap-3">
                   <span className="text-3xl">💬</span>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-800 text-lg mb-1">{foroActual.titulo}</h3>
-                    {foroActual.descripcion && <p className="text-gray-500 text-sm">{foroActual.descripcion}</p>}
+                    <h3 className="font-bold text-[#E5E7EB] text-lg mb-1">{foroActual.titulo}</h3>
+                    {foroActual.descripcion && <p className="text-[rgba(156,163,175,0.7)] text-sm">{foroActual.descripcion}</p>}
                     <div className="flex gap-2 flex-wrap mt-2">
-                      {foroActual.fechaInicio && <span className="text-xs px-3 py-1 rounded-lg border bg-purple-50 text-purple-600 border-purple-100">{'📅 Abre: ' + fmt(foroActual.fechaInicio)}</span>}
+                      {foroActual.fechaInicio && <span className="text-xs px-3 py-1 rounded-lg border bg-[rgba(124,58,237,0.12)] text-purple-600 border-purple-100">{'📅 Abre: ' + fmt(foroActual.fechaInicio)}</span>}
                       {foroActual.fechaLimite && <span className="text-xs px-3 py-1 rounded-lg border bg-orange-50 text-orange-600 border-orange-100">{'⏰ Cierra: ' + fmt(foroActual.fechaLimite)}</span>}
                     </div>
                   </div>
@@ -657,46 +673,46 @@ export default function StudentCursos() {
 
               {/* Aviso de estado */}
               {estadoForo === 'antes' && (
-                <div className="bg-blue-50 rounded-2xl p-8 border border-blue-200 text-center">
+                <div className="bg-[rgba(59,130,246,0.1)] rounded-2xl p-8 border border-[rgba(59,130,246,0.3)] text-center">
                   <span className="text-5xl">🔒</span>
-                  <p className="text-blue-700 font-bold mt-3 text-lg">El foro aún no está disponible</p>
+                  <p className="text-[#60A5FA] font-bold mt-3 text-lg">El foro aún no está disponible</p>
                   <p className="text-blue-500 text-sm mt-1">{'Abre el ' + fmt(foroActual.fechaInicio)}</p>
                 </div>
               )}
               {estadoForo === 'cerrado' && !miPub && (
-                <div className="bg-red-50 rounded-2xl p-8 border border-red-200 text-center">
+                <div className="bg-[rgba(239,68,68,0.1)] rounded-2xl p-8 border border-[rgba(239,68,68,0.3)] text-center">
                   <span className="text-5xl">⏰</span>
                   <p className="text-red-700 font-bold mt-3 text-lg">El foro ya cerró</p>
-                  <p className="text-red-500 text-sm mt-1">Ya no se pueden agregar participaciones</p>
+                  <p className="text-[#F87171] text-sm mt-1">Ya no se pueden agregar participaciones</p>
                 </div>
               )}
 
               {/* Mi participacion */}
               {miPub ? (
-                <div className="bg-green-50 rounded-2xl p-5 border border-green-200">
+                <div className="bg-[rgba(16,185,129,0.1)] rounded-2xl p-5 border border-[rgba(16,185,129,0.3)]">
                   {editPubId === miPub.id ? (
                     <div className="space-y-3">
-                      <textarea value={editPubTexto} onChange={e => setEditPubTexto(e.target.value)} rows={4} className={inp + ' bg-white'} />
+                      <textarea value={editPubTexto} onChange={e => setEditPubTexto(e.target.value)} rows={4} className={inp} style={{ background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(124,58,237,0.3)', color: '#E5E7EB' }} />
                       <div className="flex gap-2">
-                        <button onClick={() => { setEditPubId(null); setEditPubTexto('') }} className="flex-1 border border-gray-200 text-gray-600 py-2.5 rounded-xl font-semibold text-sm hover:bg-gray-50">Cancelar</button>
+                        <button onClick={() => { setEditPubId(null); setEditPubTexto('') }} className="flex-1 border border-[rgba(124,58,237,0.2)] text-[#9CA3AF] py-2.5 rounded-xl font-semibold text-sm hover:bg-[rgba(124,58,237,0.1)]">Cancelar</button>
                         <button onClick={() => guardarEditPub(miPub.id)} className="flex-1 bg-purple-600 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-purple-700">Guardar</button>
                       </div>
                     </div>
                   ) : (
                     <div>
                       <div className="flex items-center justify-between mb-1">
-                        <p className="font-semibold text-green-700 text-sm">✅ Tu participación:</p>
+                        <p className="font-semibold text-[#34D399] text-sm">✅ Tu participación:</p>
                         {estadoForo === 'abierto' && (
                           <button onClick={() => { setEditPubId(miPub.id); setEditPubTexto(miPub.texto) }} className="text-purple-600 text-xs font-semibold hover:underline">✏️ Editar</button>
                         )}
                       </div>
-                      <p className="text-gray-700 text-sm whitespace-pre-wrap">{miPub.texto}</p>
+                      <p className="text-[#D1D5DB] text-sm whitespace-pre-wrap">{miPub.texto}</p>
                       {miPub.comentarios?.length > 0 && (
-                        <div className="mt-3 space-y-2 pl-4 border-l-2 border-green-200">
+                        <div className="mt-3 space-y-2 pl-4 border-l-2 border-[rgba(16,185,129,0.3)]">
                           {miPub.comentarios.map(com => (
-                            <div key={com.id} className="bg-white rounded-lg p-3 border border-gray-100">
-                              <p className="text-xs font-semibold text-gray-700">{com.autorNombre}</p>
-                              <p className="text-sm text-gray-600 mt-0.5 whitespace-pre-wrap">{com.texto}</p>
+                            <div key={com.id} style={{ background: "#1C1535", borderRadius: 10 }} className=" p-3 border border-[rgba(124,58,237,0.15)]">
+                              <p className="text-xs font-semibold text-[#D1D5DB]">{com.autorNombre}</p>
+                              <p className="text-sm text-[#9CA3AF] mt-0.5 whitespace-pre-wrap">{com.texto}</p>
                             </div>
                           ))}
                         </div>
@@ -705,39 +721,39 @@ export default function StudentCursos() {
                   )}
                 </div>
               ) : estadoForo === 'abierto' ? (
-                <div className="bg-white rounded-2xl p-5 shadow-sm space-y-3">
-                  <h3 className="font-bold text-gray-800 text-sm">Tu participación</h3>
+                <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-5 shadow-none space-y-3">
+                  <h3 className="font-bold text-[#E5E7EB] text-sm">Tu participación</h3>
                   <textarea value={pubTexto} onChange={e => setPubTexto(e.target.value)} placeholder="Escribe tu participación..." rows={4} className={inp} />
                   <button onClick={publicarEnForo} disabled={!pubTexto.trim()} className="w-full bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-md disabled:opacity-40">💬 Publicar</button>
                 </div>
               ) : null}
 
               {/* Participaciones de otros */}
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Participaciones de compañeros ({otras.length})</p>
+              <p className="text-xs font-semibold text-[rgba(156,163,175,0.5)] uppercase tracking-wider">Participaciones de compañeros ({otras.length})</p>
               {otras.length === 0 ? (
-                <div className="bg-white rounded-2xl p-10 text-center shadow-sm">
+                <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-10 text-center shadow-none">
                   <span className="text-4xl">💭</span>
-                  <p className="text-gray-500 mt-2 text-sm">Aún no hay otras participaciones</p>
+                  <p className="text-[rgba(156,163,175,0.7)] mt-2 text-sm">Aún no hay otras participaciones</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {otras.map(pub => (
-                    <div key={pub.id} className="bg-white rounded-2xl p-5 shadow-sm">
+                    <div key={pub.id} style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-5 shadow-none">
                       <div className="flex items-start gap-3">
-                        <div className="w-9 h-9 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold text-sm flex-shrink-0">
+                        <div className="w-9 h-9 bg-[rgba(124,58,237,0.15)] rounded-full flex items-center justify-center text-purple-700 font-bold text-sm flex-shrink-0">
                           {pub.estudiante?.nombre?.charAt(0) || '?'}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-gray-800 text-sm">{pub.estudiante?.nombre || 'Estudiante'}</p>
-                          <p className="text-gray-700 text-sm mt-1 whitespace-pre-wrap">{pub.texto}</p>
-                          <p className="text-xs text-gray-400 mt-1">{fmt(pub.createdAt)}</p>
+                          <p className="font-semibold text-[#E5E7EB] text-sm">{pub.estudiante?.nombre || 'Estudiante'}</p>
+                          <p className="text-[#D1D5DB] text-sm mt-1 whitespace-pre-wrap">{pub.texto}</p>
+                          <p className="text-xs text-[rgba(156,163,175,0.5)] mt-1">{fmt(pub.createdAt)}</p>
 
                           {pub.comentarios?.length > 0 && (
-                            <div className="mt-3 space-y-2 pl-4 border-l-2 border-gray-100">
+                            <div className="mt-3 space-y-2 pl-4 border-l-2 border-[rgba(124,58,237,0.15)]">
                               {pub.comentarios.map(com => (
-                                <div key={com.id} className="bg-slate-50 rounded-lg p-3">
-                                  <p className="text-xs font-semibold text-gray-700">{com.autorNombre}</p>
-                                  <p className="text-sm text-gray-600 mt-0.5 whitespace-pre-wrap">{com.texto}</p>
+                                <div key={com.id} style={{ background: "rgba(124,58,237,0.06)" }} className="rounded-lg p-3">
+                                  <p className="text-xs font-semibold text-[#D1D5DB]">{com.autorNombre}</p>
+                                  <p className="text-sm text-[#9CA3AF] mt-0.5 whitespace-pre-wrap">{com.texto}</p>
                                 </div>
                               ))}
                             </div>
@@ -746,8 +762,7 @@ export default function StudentCursos() {
                           {estadoForo === 'abierto' && (
                             <div className="flex gap-2 mt-3">
                               <input value={comentTemp[pub.id] || ''} onChange={e => setComentTemp(p => ({ ...p, [pub.id]: e.target.value }))}
-                                placeholder="Responder..." className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300"
-                                onKeyDown={e => { if (e.key === 'Enter') enviarComentario(pub.id) }} />
+                               placeholder="Responder..." className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-300"                                onKeyDown={e => { if (e.key === 'Enter') enviarComentario(pub.id) }} />
                               <button onClick={() => enviarComentario(pub.id)} className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-purple-700">Enviar</button>
                             </div>
                           )}
@@ -764,15 +779,15 @@ export default function StudentCursos() {
         {/* RESPONDER QUIZ */}
         {vista === 'quiz' && quizActual && (
           <div className="space-y-5 max-w-3xl">
-            <div className="bg-white rounded-2xl p-6 shadow-sm">
+            <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-6 shadow-none">
               <div className="flex items-start gap-3">
                 <span className="text-3xl">❓</span>
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-800 text-lg mb-1">{quizActual.titulo}</h3>
-                  {quizActual.descripcion && <p className="text-gray-500 text-sm">{quizActual.descripcion}</p>}
-                  <p className="text-xs text-gray-400 mt-2">{(quizActual.preguntas?.length || 0) + ' preguntas · maximo 2 intentos'}</p>
+                  <h3 className="font-bold text-[#E5E7EB] text-lg mb-1">{quizActual.titulo}</h3>
+                  {quizActual.descripcion && <p className="text-[rgba(156,163,175,0.7)] text-sm">{quizActual.descripcion}</p>}
+                  <p className="text-xs text-[rgba(156,163,175,0.5)] mt-2">{(quizActual.preguntas?.length || 0) + ' preguntas · maximo 2 intentos'}</p>
                   <div className="flex gap-2 flex-wrap mt-2">
-                    {quizActual.fechaInicio && <span className="text-xs px-3 py-1 rounded-lg border bg-purple-50 text-purple-600 border-purple-100">{'📅 Abre: ' + fmt(quizActual.fechaInicio)}</span>}
+                    {quizActual.fechaInicio && <span className="text-xs px-3 py-1 rounded-lg border bg-[rgba(124,58,237,0.12)] text-purple-600 border-purple-100">{'📅 Abre: ' + fmt(quizActual.fechaInicio)}</span>}
                     {quizActual.fechaLimite && <span className="text-xs px-3 py-1 rounded-lg border bg-orange-50 text-orange-600 border-orange-100">{'⏰ Cierra: ' + fmt(quizActual.fechaLimite)}</span>}
                   </div>
                 </div>
@@ -780,26 +795,26 @@ export default function StudentCursos() {
             </div>
 
             {estadoQuiz === 'antes' ? (
-              <div className="bg-blue-50 rounded-2xl p-8 border border-blue-200 text-center">
+              <div className="bg-[rgba(59,130,246,0.1)] rounded-2xl p-8 border border-[rgba(59,130,246,0.3)] text-center">
                 <span className="text-5xl">🔒</span>
-                <p className="text-blue-700 font-bold mt-3 text-lg">El quiz aún no está disponible</p>
+                <p className="text-[#60A5FA] font-bold mt-3 text-lg">El quiz aún no está disponible</p>
                 <p className="text-blue-500 text-sm mt-1">{'Abre el ' + fmt(quizActual.fechaInicio)}</p>
               </div>
             ) : estadoQuiz === 'cerrado' && !miIntentoQuiz ? (
-              <div className="bg-red-50 rounded-2xl p-8 border border-red-200 text-center">
+              <div className="bg-[rgba(239,68,68,0.1)] rounded-2xl p-8 border border-[rgba(239,68,68,0.3)] text-center">
                 <span className="text-5xl">⏰</span>
                 <p className="text-red-700 font-bold mt-3 text-lg">El quiz ya cerró</p>
-                <p className="text-red-500 text-sm mt-1">No alcanzaste a responderlo</p>
+                <p className="text-[#F87171] text-sm mt-1">No alcanzaste a responderlo</p>
               </div>
             ) : resultadoQuiz ? (
-              <div className="bg-white rounded-2xl p-8 shadow-sm text-center space-y-4">
+              <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-8 shadow-none text-center space-y-4">
                 <span className="text-6xl">{resultadoQuiz.nota >= 7 ? '🎉' : '📚'}</span>
                 <div>
-                  <p className="text-gray-500 text-sm">Tu calificacion en este intento</p>
-                  <p className={'text-6xl font-black ' + (resultadoQuiz.nota >= 7 ? 'text-green-600' : 'text-red-500')}>{resultadoQuiz.nota}</p>
-                  <p className="text-gray-400 text-sm">{'Acertaste ' + resultadoQuiz.aciertos + ' de ' + resultadoQuiz.total}</p>
+                  <p className="text-[rgba(156,163,175,0.7)] text-sm">Tu calificacion en este intento</p>
+                  <p className={'text-6xl font-black ' + (resultadoQuiz.nota >= 7 ? 'text-[#34D399]' : 'text-[#F87171]')}>{resultadoQuiz.nota}</p>
+                  <p className="text-[rgba(156,163,175,0.5)] text-sm">{'Acertaste ' + resultadoQuiz.aciertos + ' de ' + resultadoQuiz.total}</p>
                 </div>
-                <div className="bg-purple-50 rounded-xl p-4 border border-purple-100">
+                <div className="bg-[rgba(124,58,237,0.12)] rounded-xl p-4 border border-purple-100">
                   <p className="text-sm text-purple-700 font-semibold">{'Mejor nota: ' + resultadoQuiz.mejorNota + '/10'}</p>
                   <p className="text-xs text-purple-500 mt-0.5">{'Intentos usados: ' + resultadoQuiz.intentos + '/2'}</p>
                 </div>
@@ -809,34 +824,34 @@ export default function StudentCursos() {
                     🔁 Reintentar (te queda 1 intento)
                   </button>
                 ) : (
-                  <p className="text-gray-400 text-sm">Se guarda tu mejor nota.</p>
+                  <p className="text-[rgba(156,163,175,0.5)] text-sm">Se guarda tu mejor nota.</p>
                 )}
               </div>
             ) : miIntentoQuiz && (miIntentoQuiz.intentos >= 2 || estadoQuiz === 'cerrado') ? (
-              <div className="bg-white rounded-2xl p-8 shadow-sm text-center space-y-3">
+              <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-8 shadow-none text-center space-y-3">
                 <span className="text-5xl">✅</span>
-                <p className="text-gray-700 font-bold text-lg">Ya completaste este quiz</p>
-                <div className="bg-purple-50 rounded-xl p-5 border border-purple-100 inline-block">
-                  <p className="text-gray-500 text-sm">Tu mejor nota</p>
-                  <p className={'text-5xl font-black ' + (miIntentoQuiz.nota >= 7 ? 'text-green-600' : 'text-red-500')}>{miIntentoQuiz.nota}</p>
-                  <p className="text-gray-400 text-xs">{'Intentos: ' + miIntentoQuiz.intentos + '/2'}</p>
+                <p className="text-[#D1D5DB] font-bold text-lg">Ya completaste este quiz</p>
+                <div className="bg-[rgba(124,58,237,0.12)] rounded-xl p-5 border border-purple-100 inline-block">
+                  <p className="text-[rgba(156,163,175,0.7)] text-sm">Tu mejor nota</p>
+                  <p className={'text-5xl font-black ' + (miIntentoQuiz.nota >= 7 ? 'text-[#34D399]' : 'text-[#F87171]')}>{miIntentoQuiz.nota}</p>
+                  <p className="text-[rgba(156,163,175,0.5)] text-xs">{'Intentos: ' + miIntentoQuiz.intentos + '/2'}</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
                 {miIntentoQuiz && (
-                  <div className="bg-blue-50 rounded-xl p-4 border border-blue-200 text-sm text-blue-700">
+                  <div className="bg-[rgba(59,130,246,0.1)] rounded-xl p-4 border border-[rgba(59,130,246,0.3)] text-sm text-[#60A5FA]">
                     {'Ya hiciste este quiz una vez (nota: ' + miIntentoQuiz.nota + '/10). Te queda 1 intento, se guardará la mejor nota.'}
                   </div>
                 )}
                 {quizActual.preguntas?.map((p, i) => (
-                  <div key={p.id} className="bg-white rounded-2xl p-5 shadow-sm">
-                    <p className="font-semibold text-gray-800 mb-3">{(i + 1) + '. ' + p.texto}</p>
+                  <div key={p.id} style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-5 shadow-none">
+                    <p className="font-semibold text-[#E5E7EB] mb-3">{(i + 1) + '. ' + p.texto}</p>
                     <div className="space-y-2">
                       {p.opciones.map((op, j) => (
-                        <label key={j} className={'flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ' + (respuestasQuiz[i] === j ? 'border-purple-400 bg-purple-50' : 'border-gray-100 hover:border-purple-200')}>
+                        <label key={j} className={'flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ' + (respuestasQuiz[i] === j ? 'border-purple-400 bg-[rgba(124,58,237,0.12)]' : 'border-[rgba(124,58,237,0.15)] hover:border-[rgba(124,58,237,0.3)]')}>
                           <input type="radio" name={'preg-' + i} checked={respuestasQuiz[i] === j} onChange={() => setRespuestasQuiz(prev => ({ ...prev, [i]: j }))} className="w-4 h-4 accent-purple-600" />
-                          <span className="text-sm text-gray-700">{op}</span>
+                          <span className="text-sm text-[#D1D5DB]">{op}</span>
                         </label>
                       ))}
                     </div>

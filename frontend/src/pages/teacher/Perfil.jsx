@@ -7,7 +7,7 @@ import { authService } from '../../services/api'
 const NAV = [
   { icon: '🏠', label: 'Inicio', path: '/profesor/dashboard' },
   { icon: '📚', label: 'Mis Cursos', path: '/profesor/cursos' },
-  { icon: '👨‍🎓', label: 'Estudiantes', path: '/profesor/estudiantes' },
+  { icon: '🎓', label: 'Estudiantes', path: '/profesor/estudiantes' },
   { icon: '📊', label: 'Analíticas', path: '/profesor/analiticas' },
 ]
 
@@ -18,13 +18,13 @@ export default function TeacherPerfil() {
   // Estado de membresia
   const fmtFecha = iso => iso ? new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' }) : '—'
   const calcEstado = () => {
-    if (!usuario?.membresiaVence) return { txt: 'Sin membresia', color: 'gray', cls: 'bg-gray-100 text-gray-600 border-gray-200' }
+    if (!usuario?.membresiaVence) return { txt: 'Sin membresia', color: 'gray', cls: 'bg-white/5 text-[#9CA3AF] border-purple-900/30' }
     const ahora = new Date()
     const vence = new Date(usuario.membresiaVence)
     const finGracia = new Date(vence); finGracia.setDate(finGracia.getDate() + 3)
-    if (ahora <= vence) return { txt: 'Activa', color: 'green', cls: 'bg-green-100 text-green-700 border-green-200' }
-    if (ahora <= finGracia) return { txt: 'En periodo de gracia', color: 'orange', cls: 'bg-orange-100 text-orange-700 border-orange-200' }
-    return { txt: 'Vencida', color: 'red', cls: 'bg-red-100 text-red-600 border-red-200' }
+    if (ahora <= vence) return { txt: 'Activa', color: 'green', cls: 'bg-[rgba(16,185,129,0.15)] text-[#34D399] border-[rgba(16,185,129,0.3)]' }
+    if (ahora <= finGracia) return { txt: 'En periodo de gracia', color: 'orange', cls: 'bg-[rgba(245,158,11,0.15)] text-[#FBBF24] border-[rgba(245,158,11,0.3)]' }
+    return { txt: 'Vencida', color: 'red', cls: 'bg-[rgba(239,68,68,0.15)] text-[#F87171] border-[rgba(239,68,68,0.3)]' }
   }
   const estadoMemb = calcEstado()
 
@@ -101,9 +101,10 @@ const handleCambiarPass = async () => {
 
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h2 className="text-2xl font-black text-gray-900">Mi Perfil 👤</h2>
-            <p className="text-gray-400 text-sm mt-0.5">Gestiona tu información personal y configuración</p>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#059669,#34D399)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: "0 4px 14px rgba(5,150,105,0.4)", flexShrink: 0 }}>👤</div>
+            <h2 className="text-2xl font-black text-[#F3F4F6]">Mi Perfil 👤</h2>
+            <p style={{ color: "#E5E7EB" }} className=" text-base mt-0.5">Gestiona tu información personal y configuración</p>
           </div>
           {!editando ? (
             <button onClick={() => setEditando(true)}
@@ -112,7 +113,7 @@ const handleCambiarPass = async () => {
             </button>
           ) : (
             <div className="flex gap-2">
-              <button onClick={() => setEditando(false)} className="border border-gray-200 text-gray-600 px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition-all text-sm">
+              <button onClick={() => setEditando(false)} className="border border-purple-900/30 text-[#9CA3AF] px-5 py-2.5 rounded-xl font-semibold hover:bg-[rgba(255,255,255,0.08)]/5 transition-all text-sm">
                 Cancelar
               </button>
               <button onClick={handleGuardar} className="bg-purple-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-purple-700 transition-all text-sm shadow-md">
@@ -123,13 +124,13 @@ const handleCambiarPass = async () => {
         </div>
 
         {guardado && (
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-green-700 font-semibold text-sm flex items-center gap-2">
+          <div style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 14, padding: "14px 18px", color: "#34D399", fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
             ✅ Perfil actualizado correctamente
           </div>
         )}
 
         {/* Avatar + info básica */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-7">
+        <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.2)" }} className=" shadow-sm border border-[rgba(124,58,237,0.15)] p-7">
           <div className="flex items-start gap-6 flex-wrap">
             {/* Foto */}
             <div className="relative flex-shrink-0">
@@ -154,15 +155,15 @@ const handleCambiarPass = async () => {
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-2xl font-black text-gray-900 leading-tight">{perfil.nombre || 'Sin nombre'}</h3>
-              <p className="text-gray-400 text-sm mt-0.5">{perfil.email}</p>
-              {perfil.especialidad && <p className="text-gray-500 text-sm mt-1">🎓 {perfil.especialidad}</p>}
-              {perfil.institucion && <p className="text-gray-500 text-sm">🏫 {perfil.institucion}</p>}
-              {perfil.ciudad && <p className="text-gray-500 text-sm">📍 {perfil.ciudad}</p>}
+              <h3 className="text-2xl font-black text-[#F3F4F6] leading-tight">{perfil.nombre || 'Sin nombre'}</h3>
+              <p style={{ color: "rgba(156,163,175,0.5)" }} className=" text-sm mt-0.5">{perfil.email}</p>
+              {perfil.especialidad && <p style={{ color: "rgba(156,163,175,0.6)" }} className=" text-sm mt-1">🎓 {perfil.especialidad}</p>}
+              {perfil.institucion && <p style={{ color: "rgba(156,163,175,0.6)" }} className=" text-sm">🏫 {perfil.institucion}</p>}
+              {perfil.ciudad && <p style={{ color: "rgba(156,163,175,0.6)" }} className=" text-sm">📍 {perfil.ciudad}</p>}
               <div className="flex flex-wrap gap-2 mt-3">
-                <span className="bg-purple-100 text-purple-700 text-xs px-3 py-1 rounded-full font-semibold border border-purple-200">👨‍🏫 Profesor</span>
+                <span style={{ background: "rgba(124,58,237,0.2)", color: "#A78BFA", fontSize: 11, padding: "4px 12px", borderRadius: 999, fontWeight: 700, border: "1px solid rgba(124,58,237,0.3)" }}>👨🏫 Profesor</span>
                 {perfil.especialidad && (
-                  <span className="bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-semibold border border-blue-200">{perfil.especialidad}</span>
+                  <span style={{ background: "rgba(59,130,246,0.15)", color: "#60A5FA", fontSize: 11, padding: "4px 12px", borderRadius: 999, fontWeight: 700, border: "1px solid rgba(59,130,246,0.25)" }}>{perfil.especialidad}</span>
                 )}
               </div>
               {editando && (
@@ -174,34 +175,34 @@ const handleCambiarPass = async () => {
           </div>
 
           {/* Bio */}
-          <div className="mt-5 pt-5 border-t border-gray-100">
-            <label className="text-sm font-semibold text-gray-700 mb-1.5 block">📝 Biografía / Descripción</label>
+          <div className="mt-5 pt-5 border-t border-[rgba(124,58,237,0.15)]">
+            <label className="text-sm font-semibold text-[#D1D5DB] mb-1.5 block">📝 Biografía / Descripción</label>
             {editando ? (
               <textarea
                 value={perfil.bio}
                 onChange={e => setPerfil(p => ({ ...p, bio: e.target.value }))}
                 placeholder="Cuéntanos un poco sobre ti, tu experiencia docente..."
                 rows={3}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 resize-none transition-all"
+                style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(124,58,237,0.3)", borderRadius: 12, padding: "12px 16px", fontSize: 13, color: "#E5E7EB", outline: "none", resize: "none", fontFamily: "Poppins,sans-serif", boxSizing: "border-box" }}
               />
             ) : (
-              <p className="text-sm text-gray-600 leading-relaxed">
-                {perfil.bio || <span className="text-gray-400 italic">Sin descripción aún. Haz clic en "Editar perfil" para agregar una.</span>}
+              <p className="text-sm text-[#9CA3AF] leading-relaxed">
+                {perfil.bio || <span style={{ color: "rgba(156,163,175,0.5)" }} className=" italic">Sin descripción aún. Haz clic en "Editar perfil" para agregar una.</span>}
               </p>
             )}
           </div>
         </div>
 
         {/* Datos personales */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-slate-50 flex items-center gap-2">
+        <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.2)" }} className=" shadow-sm border border-[rgba(124,58,237,0.15)] overflow-hidden">
+          <div style={{ padding: "16px 24px", borderBottom: "1px solid rgba(124,58,237,0.15)", background: "rgba(124,58,237,0.08)", display: "flex", alignItems: "center", gap: 8 }}>
             <span className="text-lg">📋</span>
-            <h3 className="font-bold text-gray-800">Información personal</h3>
+            <h3 className="font-bold text-[#E5E7EB]">Información personal</h3>
           </div>
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
             {campos.map(campo => (
               <div key={campo.key} className={campo.key === 'bio' ? 'md:col-span-2' : ''}>
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <label className="text-xs font-bold text-[rgba(156,163,175,0.7)] uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <span>{campo.icon}</span>{campo.label}
                 </label>
                 {editando ? (
@@ -210,11 +211,11 @@ const handleCambiarPass = async () => {
                     value={perfil[campo.key]}
                     onChange={e => setPerfil(p => ({ ...p, [campo.key]: e.target.value }))}
                     placeholder={campo.placeholder}
-                    className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all bg-gray-50 focus:bg-white"
+                    style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(124,58,237,0.3)", borderRadius: 12, padding: "12px 16px", fontSize: 13, color: "#E5E7EB", outline: "none", fontFamily: "Poppins,sans-serif", boxSizing: "border-box" }}
                   />
                 ) : (
-                  <div className="bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-700 border border-gray-100 min-h-[44px] flex items-center">
-                    {perfil[campo.key] || <span className="text-gray-400 italic">No especificado</span>}
+                  <div className="bg-white/5 rounded-xl px-4 py-3 text-sm text-[#D1D5DB] border border-[rgba(124,58,237,0.15)] min-h-[44px] flex items-center">
+                    {perfil[campo.key] || <span style={{ color: "rgba(156,163,175,0.5)" }} className=" italic">No especificado</span>}
                   </div>
                 )}
               </div>
@@ -223,23 +224,23 @@ const handleCambiarPass = async () => {
         </div>
 
         {/* Seguridad */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-slate-50 flex items-center gap-2">
+        <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.2)" }} className=" shadow-sm border border-[rgba(124,58,237,0.15)] overflow-hidden">
+          <div style={{ padding: "16px 24px", borderBottom: "1px solid rgba(124,58,237,0.15)", background: "rgba(124,58,237,0.08)", display: "flex", alignItems: "center", gap: 8 }}>
             <span className="text-lg">🔒</span>
             {/* Membresía */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-slate-50 flex items-center gap-2">
+        <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.2)" }} className=" shadow-sm border border-[rgba(124,58,237,0.15)] overflow-hidden">
+          <div style={{ padding: "16px 24px", borderBottom: "1px solid rgba(124,58,237,0.15)", background: "rgba(124,58,237,0.08)", display: "flex", alignItems: "center", gap: 8 }}>
             <span className="text-lg">💳</span>
-            <h3 className="font-bold text-gray-800">Mi Membresía</h3>
+            <h3 className="font-bold text-[#E5E7EB]">Mi Membresía</h3>
           </div>
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-semibold text-gray-700">Estado:</span>
+                  <span className="text-sm font-semibold text-[#D1D5DB]">Estado:</span>
                   <span className={'text-xs px-3 py-1 rounded-full font-semibold border ' + estadoMemb.cls}>{estadoMemb.txt}</span>
                 </div>
-                <p className="text-gray-400 text-sm">
+                <p style={{ color: "rgba(156,163,175,0.5)" }} className=" text-sm">
                   {usuario?.membresiaTipo ? ('Plan ' + usuario.membresiaTipo + ' · ') : ''}
                   {estadoMemb.color === 'green' ? 'Vence el ' : 'Venció el '}{fmtFecha(usuario?.membresiaVence)}
                 </p>
@@ -253,24 +254,24 @@ const handleCambiarPass = async () => {
             </div>
 
             {estadoMemb.color === 'orange' && (
-              <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 text-orange-700 text-sm">
+              <div style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 12, padding: "12px 14px", color: "#FBBF24", fontSize: 13 }}>
                 ⚠️ Tu membresía venció pero estás en periodo de gracia. Renueva pronto para no perder el acceso.
               </div>
             )}
             {estadoMemb.color === 'green' && (
-              <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-green-700 text-sm">
+              <div style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 12, padding: "12px 14px", color: "#34D399", fontSize: 13 }}>
                 ✅ Tu membresía está activa. ¡Disfruta todas las funciones de EduSmart AI+!
               </div>
             )}
           </div>
         </div>
-            <h3 className="font-bold text-gray-800">Seguridad</h3>
+            <h3 className="font-bold text-[#E5E7EB]">Seguridad</h3>
           </div>
           <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-200">
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-purple-900/30">
               <div>
-                <p className="font-semibold text-gray-800 text-sm">Contraseña</p>
-                <p className="text-gray-400 text-xs mt-0.5">Última actualización: No registrada</p>
+                <p className="font-semibold text-[#E5E7EB] text-sm">Contraseña</p>
+                <p style={{ color: "rgba(156,163,175,0.5)" }} className=" text-xs mt-0.5">Última actualización: No registrada</p>
               </div>
               <button
                 onClick={() => setShowCambiarPass(p => !p)}
@@ -281,32 +282,32 @@ const handleCambiarPass = async () => {
             </div>
 
             {showCambiarPass && (
-              <div className="bg-purple-50 rounded-2xl p-5 border border-purple-200 space-y-4">
-                <h4 className="font-bold text-purple-800 text-sm">Cambiar contraseña</h4>
+              <div style={{ background: "rgba(124,58,237,0.1)", borderRadius: 16, padding: 20, border: "1px solid rgba(124,58,237,0.3)", display: "flex", flexDirection: "column", gap: 16 }}>
+                <h4 style={{ fontWeight: 700, color: "#A78BFA", fontSize: 14 }}>Cambiar contraseña</h4>
                 {[
                   { key: 'actual', label: 'Contraseña actual', placeholder: '••••••••' },
                   { key: 'nueva', label: 'Nueva contraseña', placeholder: '••••••••' },
                   { key: 'confirmar', label: 'Confirmar nueva contraseña', placeholder: '••••••••' },
                 ].map(f => (
                   <div key={f.key}>
-                    <label className="text-xs font-semibold text-purple-700 mb-1 block">{f.label}</label>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(167,139,250,0.8)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6, display: "block" }}>{f.label}</label>
                     <input
                       type="password"
                       value={passData[f.key]}
                       onChange={e => setPassData(p => ({ ...p, [f.key]: e.target.value }))}
                       placeholder={f.placeholder}
-                      className="w-full border border-purple-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white transition-all"
+                      style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1.5px solid rgba(124,58,237,0.3)", borderRadius: 12, padding: "12px 16px", fontSize: 13, color: "#E5E7EB", outline: "none", fontFamily: "Poppins,sans-serif", boxSizing: "border-box" }}
                     />
                   </div>
                 ))}
                 {passMsg && (
-                  <div className={`rounded-xl p-3 text-sm font-semibold ${passMsg.ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+                  <div className={passMsg.ok ? "rounded-xl p-3 text-sm font-semibold bg-[rgba(16,185,129,0.12)] text-[#34D399] border border-[rgba(16,185,129,0.3)]" : "rounded-xl p-3 text-sm font-semibold bg-[rgba(239,68,68,0.12)] text-[#F87171] border border-[rgba(239,68,68,0.3)]"}>
                     {passMsg.msg}
                   </div>
                 )}
                 <div className="flex gap-3">
                   <button onClick={() => { setShowCambiarPass(false); setPassData({ actual: '', nueva: '', confirmar: '' }); setPassMsg(null) }}
-                    className="flex-1 border border-purple-200 text-purple-700 py-2.5 rounded-xl font-semibold text-sm hover:bg-purple-100 transition-all">
+                    style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#D1D5DB", padding: "10px", borderRadius: 12, fontFamily: "Poppins,sans-serif", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
                     Cancelar
                   </button>
                   <button onClick={handleCambiarPass}

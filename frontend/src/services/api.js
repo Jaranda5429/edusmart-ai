@@ -22,6 +22,9 @@ export const authService = {
   }),
   miPerfil: () => api.get('/auth/perfil'),
   cambiarPassword: (data) => api.put('/auth/cambiar-password', data),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  verifyResetCode: (data) => api.post('/auth/verify-reset-code', data),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
 }
 
 // ── Admin ───────────────────────────────────────────────────────────────────

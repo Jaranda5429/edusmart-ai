@@ -17,6 +17,7 @@ import StudentNotificaciones from './pages/student/Notificaciones'
 import StudentPerfil from './pages/student/Perfil'
 import AIBot from './components/AIBot'
 import Renovar from './pages/auth/Renovar'
+import RecuperarPassword from './pages/auth/RecuperarPassword'
 
 const Ruta = ({ children, rol }) => {
   const { usuario, loading } = useAuth()
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/renovar"  element={<Renovar />} />
+        <Route path="/recuperar-password" element={<RecuperarPassword />} />
 
         {/* ADMIN */}
         <Route path="/admin/dashboard" element={<Ruta rol="ADMIN"><AdminDashboard /></Ruta>} />

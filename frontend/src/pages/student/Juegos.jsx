@@ -7,7 +7,6 @@ const NAV = [
   { icon: '📝', label: 'Tareas', path: '/estudiante/tareas' },
   { icon: '📈', label: 'Progreso', path: '/estudiante/progreso' },
   { icon: '🎮', label: 'Juegos', path: '/estudiante/juegos' },
-  { icon: '🔔', label: 'Notificaciones', path: '/estudiante/notificaciones' },
 ]
 
 // ─── PREGUNTAS DE TRIVIA ───────────────────────────────
@@ -53,13 +52,13 @@ function Trivia({ onVolver }) {
   if (terminado) {
     const pct = Math.round((puntos / PREGUNTAS.length) * 100)
     return (
-      <div className="bg-white rounded-2xl p-10 text-center shadow-sm max-w-lg mx-auto">
+      <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-10 text-center shadow-none max-w-lg mx-auto">
         <span className="text-6xl">{pct >= 70 ? '🏆' : pct >= 40 ? '👍' : '💪'}</span>
-        <h3 className="text-2xl font-black text-gray-800 mt-4">¡Terminaste!</h3>
-        <p className="text-gray-500 mt-2">Acertaste</p>
+        <h3 className="text-2xl font-black text-[#E5E7EB] mt-4">¡Terminaste!</h3>
+        <p className="text-[rgba(156,163,175,0.7)] mt-2">Acertaste</p>
         <p className="text-5xl font-black text-purple-600 my-3">{puntos}/{PREGUNTAS.length}</p>
         <div className="flex gap-3 mt-6">
-          <button onClick={onVolver} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50">Salir</button>
+          <button onClick={onVolver} className="flex-1 border border-[rgba(124,58,237,0.2)] text-[#9CA3AF] py-3 rounded-xl font-semibold hover:bg-[rgba(124,58,237,0.1)]">Salir</button>
           <button onClick={reiniciar} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 shadow-md">Jugar de nuevo</button>
         </div>
       </div>
@@ -67,31 +66,31 @@ function Trivia({ onVolver }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-sm max-w-2xl mx-auto">
+    <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-8 shadow-none max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <span className="text-sm font-semibold text-gray-400">Pregunta {indice + 1} de {PREGUNTAS.length}</span>
+        <span className="text-sm font-semibold text-[rgba(156,163,175,0.5)]">Pregunta {indice + 1} de {PREGUNTAS.length}</span>
         <span className="text-sm font-bold text-purple-600">⭐ {puntos} puntos</span>
       </div>
 
       {/* Barra de progreso */}
-      <div className="w-full bg-gray-100 rounded-full h-2 mb-6">
+      <div className="w-full bg-[rgba(255,255,255,0.06)] rounded-full h-2 mb-6">
         <div className="bg-purple-600 h-2 rounded-full transition-all" style={{ width: ((indice + 1) / PREGUNTAS.length * 100) + '%' }} />
       </div>
 
-      <h3 className="text-xl font-bold text-gray-800 mb-6">{pregunta.pregunta}</h3>
+      <h3 className="text-xl font-bold text-[#E5E7EB] mb-6">{pregunta.pregunta}</h3>
 
       <div className="space-y-3">
         {pregunta.opciones.map((op, i) => {
-          let cls = 'border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+          let cls = 'border-[rgba(124,58,237,0.2)] hover:border-purple-300 hover:bg-[rgba(124,58,237,0.12)]'
           if (seleccion !== null) {
-            if (i === pregunta.correcta) cls = 'border-green-400 bg-green-50 text-green-700'
-            else if (i === seleccion) cls = 'border-red-400 bg-red-50 text-red-700'
-            else cls = 'border-gray-200 opacity-50'
+            if (i === pregunta.correcta) cls = 'border-green-400 bg-[rgba(16,185,129,0.1)] text-[#34D399]'
+            else if (i === seleccion) cls = 'border-red-400 bg-[rgba(239,68,68,0.1)] text-red-700'
+            else cls = 'border-[rgba(124,58,237,0.2)] opacity-50'
           }
           return (
             <button key={i} onClick={() => responder(i)} disabled={seleccion !== null}
               className={'w-full text-left px-5 py-4 rounded-xl border-2 font-semibold transition-all ' + cls}>
-              <span className="inline-block w-7 h-7 rounded-lg bg-white border border-gray-200 text-center mr-3 text-sm">{String.fromCharCode(65 + i)}</span>
+              <span className="inline-block w-7 h-7 rounded-lg bg-[#1C1535] border border-[rgba(124,58,237,0.2)] text-center mr-3 text-sm">{String.fromCharCode(65 + i)}</span>
               {op}
             </button>
           )
@@ -140,20 +139,20 @@ function Ahorcado({ onVolver }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-sm max-w-2xl mx-auto">
+    <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-8 shadow-none max-w-2xl mx-auto">
       {/* Muñeco + intentos */}
       <div className="text-center mb-6">
         <div className="text-7xl mb-2">{MUNECO[errores]}</div>
-        <p className="text-sm text-gray-400">Errores: {errores} / {MAX_ERRORES}</p>
+        <p className="text-sm text-[rgba(156,163,175,0.5)]">Errores: {errores} / {MAX_ERRORES}</p>
         <div className="flex justify-center gap-1 mt-2">
           {Array.from({ length: MAX_ERRORES }).map((_, i) => (
-            <div key={i} className={'w-3 h-3 rounded-full ' + (i < errores ? 'bg-red-400' : 'bg-gray-200')} />
+            <div key={i} className={'w-3 h-3 rounded-full ' + (i < errores ? 'bg-red-400' : 'bg-[rgba(255,255,255,0.08)]')} />
           ))}
         </div>
       </div>
 
       {/* Pista */}
-      <div className="bg-purple-50 rounded-xl p-3 text-center mb-6 border border-purple-100">
+      <div className="bg-[rgba(124,58,237,0.12)] rounded-xl p-3 text-center mb-6 border border-purple-100">
         <p className="text-sm text-purple-700"><span className="font-semibold">Pista:</span> {item.pista}</p>
       </div>
 
@@ -161,7 +160,7 @@ function Ahorcado({ onVolver }) {
       <div className="flex justify-center gap-2 flex-wrap mb-8">
         {palabra.split('').map((letra, i) => (
           <div key={i} className={'w-9 h-11 border-b-4 flex items-center justify-center text-2xl font-black ' +
-            (letrasUsadas.includes(letra) ? 'border-purple-400 text-gray-800' : 'border-gray-300 text-transparent')}>
+            (letrasUsadas.includes(letra) ? 'border-purple-400 text-[#E5E7EB]' : 'border-[rgba(124,58,237,0.25)] text-transparent')}>
             {letrasUsadas.includes(letra) ? letra : '_'}
           </div>
         ))}
@@ -170,12 +169,12 @@ function Ahorcado({ onVolver }) {
       {/* Resultado o teclado */}
       {terminado ? (
         <div className="text-center">
-          <p className={'text-2xl font-black mb-1 ' + (gano ? 'text-green-600' : 'text-red-500')}>
+          <p className={'text-2xl font-black mb-1 ' + (gano ? 'text-[#34D399]' : 'text-[#F87171]')}>
             {gano ? '🎉 ¡Ganaste!' : '💀 Perdiste'}
           </p>
-          {!gano && <p className="text-gray-500 mb-4">La palabra era: <span className="font-bold text-gray-800">{palabra}</span></p>}
+          {!gano && <p className="text-[rgba(156,163,175,0.7)] mb-4">La palabra era: <span className="font-bold text-[#E5E7EB]">{palabra}</span></p>}
           <div className="flex gap-3 mt-4">
-            <button onClick={onVolver} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50">Salir</button>
+            <button onClick={onVolver} className="flex-1 border border-[rgba(124,58,237,0.2)] text-[#9CA3AF] py-3 rounded-xl font-semibold hover:bg-[rgba(124,58,237,0.1)]">Salir</button>
             <button onClick={reiniciar} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 shadow-md">Otra palabra</button>
           </div>
         </div>
@@ -188,8 +187,8 @@ function Ahorcado({ onVolver }) {
               <button key={letra} onClick={() => intentar(letra)} disabled={usada}
                 className={'aspect-square rounded-lg font-bold text-sm transition-all ' +
                   (usada
-                    ? (acerto ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-400')
-                    : 'bg-gray-100 text-gray-700 hover:bg-purple-100 hover:text-purple-700')}>
+                    ? (acerto ? 'bg-[rgba(16,185,129,0.15)] text-[#34D399]' : 'bg-[rgba(239,68,68,0.15)] text-red-400')
+                    : 'bg-[rgba(255,255,255,0.06)] text-[#D1D5DB] hover:bg-[rgba(124,58,237,0.15)] hover:text-purple-700')}>
                 {letra}
               </button>
             )
@@ -354,15 +353,15 @@ function Memorama({ onVolver }) {
   // ── Paso 1: elegir materia ──
   if (!materiaSel) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-sm max-w-2xl mx-auto">
-        <h3 className="text-xl font-bold text-gray-800 mb-1 text-center">Elige una materia</h3>
-        <p className="text-gray-400 text-sm text-center mb-6">Empareja conceptos con sus respuestas</p>
+      <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-8 shadow-none max-w-2xl mx-auto">
+        <h3 className="text-xl font-bold text-[#E5E7EB] mb-1 text-center">Elige una materia</h3>
+        <p className="text-[rgba(156,163,175,0.5)] text-sm text-center mb-6">Empareja conceptos con sus respuestas</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {MATERIAS_MEMO.map(mat => (
             <button key={mat.id} onClick={() => setMateriaSel(mat)}
-              className="border-2 border-gray-200 rounded-2xl p-5 text-center hover:border-purple-300 hover:bg-purple-50 transition-all">
+              className="border-2 border-[rgba(124,58,237,0.2)] rounded-2xl p-5 text-center hover:border-purple-300 hover:bg-[rgba(124,58,237,0.12)] transition-all">
               <div className="text-4xl mb-2">{mat.icono}</div>
-              <h4 className="font-bold text-gray-800 text-sm">{mat.nombre}</h4>
+              <h4 className="font-bold text-[#E5E7EB] text-sm">{mat.nombre}</h4>
             </button>
           ))}
         </div>
@@ -373,20 +372,20 @@ function Memorama({ onVolver }) {
   // ── Paso 2: elegir nivel ──
   if (!categoria) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-sm max-w-2xl mx-auto">
-        <button onClick={() => setMateriaSel(null)} className="text-sm font-semibold text-gray-400 hover:text-purple-600 mb-4">← Cambiar materia</button>
+      <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-8 shadow-none max-w-2xl mx-auto">
+        <button onClick={() => setMateriaSel(null)} className="text-sm font-semibold text-[rgba(156,163,175,0.5)] hover:text-purple-600 mb-4">← Cambiar materia</button>
         <div className="text-center mb-6">
           <div className="text-5xl mb-2">{materiaSel.icono}</div>
-          <h3 className="text-xl font-bold text-gray-800">{materiaSel.nombre}</h3>
-          <p className="text-gray-400 text-sm">Elige tu nivel</p>
+          <h3 className="text-xl font-bold text-[#E5E7EB]">{materiaSel.nombre}</h3>
+          <p className="text-[rgba(156,163,175,0.5)] text-sm">Elige tu nivel</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {materiaSel.niveles.map((nivel, i) => (
             <button key={i} onClick={() => elegirNivel(nivel)}
-              className="border-2 border-gray-200 rounded-2xl p-6 text-center hover:border-purple-300 hover:bg-purple-50 transition-all">
+              className="border-2 border-[rgba(124,58,237,0.2)] rounded-2xl p-6 text-center hover:border-purple-300 hover:bg-[rgba(124,58,237,0.12)] transition-all">
               <div className="text-3xl mb-2">{i === 0 ? '🌱' : '🚀'}</div>
-              <h4 className="font-bold text-gray-800">{nivel.nombre}</h4>
-              <p className="text-gray-400 text-sm">{nivel.grados}</p>
+              <h4 className="font-bold text-[#E5E7EB]">{nivel.nombre}</h4>
+              <p className="text-[rgba(156,163,175,0.5)] text-sm">{nivel.grados}</p>
             </button>
           ))}
         </div>
@@ -396,20 +395,20 @@ function Memorama({ onVolver }) {
 
   // ── Tablero ──
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-sm max-w-2xl mx-auto">
+    <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-8 shadow-none max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <button onClick={() => setCategoria(null)} className="text-sm font-semibold text-gray-400 hover:text-purple-600">← Cambiar nivel</button>
-        <span className="text-xs font-semibold text-gray-400">{materiaSel.icono} {materiaSel.nombre} · {categoria.nombre}</span>
+        <button onClick={() => setCategoria(null)} className="text-sm font-semibold text-[rgba(156,163,175,0.5)] hover:text-purple-600">← Cambiar nivel</button>
+        <span className="text-xs font-semibold text-[rgba(156,163,175,0.5)]">{materiaSel.icono} {materiaSel.nombre} · {categoria.nombre}</span>
         <span className="text-sm font-bold text-purple-600">{cartas.filter(c => c.encontrada).length / 2} / {totalPares}</span>
       </div>
 
       {gano ? (
         <div className="text-center py-6">
           <span className="text-6xl">🏆</span>
-          <h3 className="text-2xl font-black text-gray-800 mt-4">¡Encontraste todas!</h3>
-          <p className="text-gray-500 mt-2">{materiaSel.nombre} {categoria.nombre} · {intentos} intentos</p>
+          <h3 className="text-2xl font-black text-[#E5E7EB] mt-4">¡Encontraste todas!</h3>
+          <p className="text-[rgba(156,163,175,0.7)] mt-2">{materiaSel.nombre} {categoria.nombre} · {intentos} intentos</p>
           <div className="flex gap-3 mt-6">
-            <button onClick={onVolver} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50">Salir</button>
+            <button onClick={onVolver} className="flex-1 border border-[rgba(124,58,237,0.2)] text-[#9CA3AF] py-3 rounded-xl font-semibold hover:bg-[rgba(124,58,237,0.1)]">Salir</button>
             <button onClick={reiniciar} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 shadow-md">Jugar de nuevo</button>
           </div>
         </div>
@@ -421,7 +420,7 @@ function Memorama({ onVolver }) {
               <button key={carta.id} onClick={() => voltear(carta)} disabled={bloqueado}
                 className={'aspect-square rounded-xl flex items-center justify-center text-center p-1 font-bold transition-all ' +
                   (mostrada
-                    ? (carta.encontrada ? 'bg-green-100 border-2 border-green-300 text-green-700' : 'bg-purple-100 border-2 border-purple-300 text-purple-700')
+                    ? (carta.encontrada ? 'bg-[rgba(16,185,129,0.15)] border-2 border-green-300 text-[#34D399]' : 'bg-[rgba(124,58,237,0.15)] border-2 border-purple-300 text-purple-700')
                     : 'bg-gradient-to-br from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 shadow-md text-white')}>
                 <span className={carta.texto.length > 6 ? 'text-[10px] leading-tight' : 'text-base'}>{mostrada ? carta.texto : '❓'}</span>
               </button>
@@ -528,19 +527,19 @@ function Rapidfire({ onVolver }) {
   // ── Paso 1: elegir nivel ──
   if (!nivel) {
     return (
-      <div className="bg-white rounded-2xl p-8 shadow-sm max-w-lg mx-auto">
+      <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-8 shadow-none max-w-lg mx-auto">
         <div className="text-center mb-6">
           <span className="text-5xl">⚡</span>
-          <h3 className="text-xl font-bold text-gray-800 mt-3">Rapidfire Matemático</h3>
-          <p className="text-gray-400 text-sm">Elige tu nivel</p>
+          <h3 className="text-xl font-bold text-[#E5E7EB] mt-3">Rapidfire Matemático</h3>
+          <p className="text-[rgba(156,163,175,0.5)] text-sm">Elige tu nivel</p>
         </div>
         <div className="grid grid-cols-2 gap-4">
           {NIVELES_RF.map(n => (
             <button key={n.id} onClick={() => setNivel(n)}
-              className="border-2 border-gray-200 rounded-2xl p-6 text-center hover:border-purple-300 hover:bg-purple-50 transition-all">
+              className="border-2 border-[rgba(124,58,237,0.2)] rounded-2xl p-6 text-center hover:border-purple-300 hover:bg-[rgba(124,58,237,0.12)] transition-all">
               <div className="text-3xl mb-2">{n.icono}</div>
-              <h4 className="font-bold text-gray-800">{n.nombre}</h4>
-              <p className="text-gray-400 text-sm">{n.grados}</p>
+              <h4 className="font-bold text-[#E5E7EB]">{n.nombre}</h4>
+              <p className="text-[rgba(156,163,175,0.5)] text-sm">{n.grados}</p>
             </button>
           ))}
         </div>
@@ -551,13 +550,13 @@ function Rapidfire({ onVolver }) {
   // ── Pantalla inicial del nivel ──
   if (!jugando && tiempo === TIEMPO_INICIAL && puntos === 0) {
     return (
-      <div className="bg-white rounded-2xl p-10 text-center shadow-sm max-w-lg mx-auto">
-        <button onClick={() => setNivel(null)} className="text-sm font-semibold text-gray-400 hover:text-purple-600 float-left">← Cambiar nivel</button>
+      <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-10 text-center shadow-none max-w-lg mx-auto">
+        <button onClick={() => setNivel(null)} className="text-sm font-semibold text-[rgba(156,163,175,0.5)] hover:text-purple-600 float-left">← Cambiar nivel</button>
         <span className="text-6xl">{nivel.icono}</span>
-        <h3 className="text-2xl font-black text-gray-800 mt-4">Nivel {nivel.nombre}</h3>
-        <p className="text-gray-500 mt-2 mb-6">Resuelve cuantas operaciones puedas en {TIEMPO_INICIAL} segundos. ¡Solo escribe el resultado!</p>
+        <h3 className="text-2xl font-black text-[#E5E7EB] mt-4">Nivel {nivel.nombre}</h3>
+        <p className="text-[rgba(156,163,175,0.7)] mt-2 mb-6">Resuelve cuantas operaciones puedas en {TIEMPO_INICIAL} segundos. ¡Solo escribe el resultado!</p>
         <div className="flex gap-3">
-          <button onClick={onVolver} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50">Salir</button>
+          <button onClick={onVolver} className="flex-1 border border-[rgba(124,58,237,0.2)] text-[#9CA3AF] py-3 rounded-xl font-semibold hover:bg-[rgba(124,58,237,0.1)]">Salir</button>
           <button onClick={empezar} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 shadow-md">¡Empezar!</button>
         </div>
       </div>
@@ -567,14 +566,14 @@ function Rapidfire({ onVolver }) {
   // ── Pantalla de resultado ──
   if (!jugando) {
     return (
-      <div className="bg-white rounded-2xl p-10 text-center shadow-sm max-w-lg mx-auto">
+      <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-10 text-center shadow-none max-w-lg mx-auto">
         <span className="text-6xl">{puntos >= 20 ? '🏆' : puntos >= 10 ? '🔥' : '💪'}</span>
-        <h3 className="text-2xl font-black text-gray-800 mt-4">¡Se acabó el tiempo!</h3>
-        <p className="text-gray-500 mt-2">Nivel {nivel.nombre} · Resolviste</p>
+        <h3 className="text-2xl font-black text-[#E5E7EB] mt-4">¡Se acabó el tiempo!</h3>
+        <p className="text-[rgba(156,163,175,0.7)] mt-2">Nivel {nivel.nombre} · Resolviste</p>
         <p className="text-6xl font-black text-purple-600 my-3">{puntos}</p>
-        <p className="text-gray-400 text-sm">operaciones correctas</p>
+        <p className="text-[rgba(156,163,175,0.5)] text-sm">operaciones correctas</p>
         <div className="flex gap-3 mt-6">
-          <button onClick={() => { setNivel(null); setTiempo(TIEMPO_INICIAL); setPuntos(0) }} className="flex-1 border border-gray-200 text-gray-600 py-3 rounded-xl font-semibold hover:bg-gray-50">Cambiar nivel</button>
+          <button onClick={() => { setNivel(null); setTiempo(TIEMPO_INICIAL); setPuntos(0) }} className="flex-1 border border-[rgba(124,58,237,0.2)] text-[#9CA3AF] py-3 rounded-xl font-semibold hover:bg-[rgba(124,58,237,0.1)]">Cambiar nivel</button>
           <button onClick={empezar} className="flex-1 bg-purple-600 text-white py-3 rounded-xl font-semibold hover:bg-purple-700 shadow-md">Jugar de nuevo</button>
         </div>
       </div>
@@ -584,19 +583,19 @@ function Rapidfire({ onVolver }) {
   // ── Juego activo ──
   const pctTiempo = (tiempo / TIEMPO_INICIAL) * 100
   return (
-    <div className="bg-white rounded-2xl p-8 shadow-sm max-w-lg mx-auto">
+    <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-8 shadow-none max-w-lg mx-auto">
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm font-bold text-purple-600">⭐ {puntos}</span>
         {racha >= 3 && <span className="text-sm font-bold text-orange-500">🔥 Racha {racha}</span>}
-        <span className={'text-sm font-bold ' + (tiempo <= 10 ? 'text-red-500' : 'text-gray-500')}>⏱️ {tiempo}s</span>
+        <span className={'text-sm font-bold ' + (tiempo <= 10 ? 'text-[#F87171]' : 'text-[rgba(156,163,175,0.7)]')}>⏱️ {tiempo}s</span>
       </div>
 
-      <div className="w-full bg-gray-100 rounded-full h-2 mb-8">
-        <div className={'h-2 rounded-full transition-all ' + (tiempo <= 10 ? 'bg-red-500' : 'bg-purple-600')} style={{ width: pctTiempo + '%' }} />
+      <div className="w-full bg-[rgba(255,255,255,0.06)] rounded-full h-2 mb-8">
+        <div className={'h-2 rounded-full transition-all ' + (tiempo <= 10 ? 'bg-[rgba(239,68,68,0.1)]0' : 'bg-purple-600')} style={{ width: pctTiempo + '%' }} />
       </div>
 
-      <div className={'text-center py-8 rounded-2xl mb-6 transition-all ' + (feedback === 'ok' ? 'bg-green-50' : 'bg-slate-50')}>
-        <p className="text-5xl font-black text-gray-800">{operacion?.texto}</p>
+      <div className={'text-center py-8 rounded-2xl mb-6 transition-all ' + (feedback === 'ok' ? 'bg-[rgba(16,185,129,0.1)]' : 'bg-[rgba(124,58,237,0.06)]')}>
+        <p className="text-5xl font-black text-[#E5E7EB]">{operacion?.texto}</p>
       </div>
 
       <input
@@ -605,19 +604,19 @@ function Rapidfire({ onVolver }) {
         onChange={onChange}
         autoFocus
         placeholder="?"
-        className="w-full border-2 border-gray-200 rounded-2xl px-4 py-5 text-center text-3xl font-black focus:outline-none focus:border-purple-400 transition-all"
+        className="w-full border-2 border-[rgba(124,58,237,0.2)] rounded-2xl px-4 py-5 text-center text-3xl font-black focus:outline-none focus:border-purple-400 transition-all"
       />
-      <p className="text-center text-gray-400 text-xs mt-3">Escribe el resultado, avanza solo al acertar</p>
+      <p className="text-center text-[rgba(156,163,175,0.5)] text-xs mt-3">Escribe el resultado, avanza solo al acertar</p>
     </div>
   )
 }
 
 // ─── PANTALLA PRINCIPAL ────────────────────────────────
 const JUEGOS = [
-  { id: 'trivia', titulo: 'Trivia', desc: 'Pon a prueba tus conocimientos', icono: '🧠', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
-  { id: 'ahorcado', titulo: 'Ahorcado', desc: 'Adivina la palabra antes de que sea tarde', icono: '🔤', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
-  { id: 'memorama', titulo: 'Memorama', desc: 'Encuentra las parejas de cartas', icono: '🃏', bg: 'bg-yellow-50', border: 'border-yellow-200', text: 'text-yellow-700' },
-  { id: 'rapidfire', titulo: 'Rapidfire', desc: 'Resuelve operaciones matemáticas rápidamente', icono: '⚡', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
+  { id: 'trivia', titulo: 'Trivia', desc: 'Pon a prueba tus conocimientos', icono: '🧠', bg: 'bg-[rgba(124,58,237,0.12)]', border: 'border-[rgba(124,58,237,0.3)]', text: 'text-purple-700' },
+  { id: 'ahorcado', titulo: 'Ahorcado', desc: 'Adivina la palabra antes de que sea tarde', icono: '🔤', bg: 'bg-[rgba(16,185,129,0.1)]', border: 'border-[rgba(16,185,129,0.3)]', text: 'text-[#34D399]' },
+  { id: 'memorama', titulo: 'Memorama', desc: 'Encuentra las parejas de cartas', icono: '🃏', bg: 'bg-[rgba(245,158,11,0.1)]', border: 'border-[rgba(245,158,11,0.3)]', text: 'text-[#FBBF24]' },
+  { id: 'rapidfire', titulo: 'Rapidfire', desc: 'Resuelve operaciones matemáticas rápidamente', icono: '⚡', bg: 'bg-[rgba(239,68,68,0.1)]', border: 'border-[rgba(239,68,68,0.3)]', text: 'text-red-700' },
 ]
 
 export default function Juegos() {
@@ -628,13 +627,13 @@ export default function Juegos() {
       <div className="max-w-6xl mx-auto px-5 py-6 space-y-6">
 
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h2 className="text-2xl font-black text-gray-900">Juegos Educativos </h2>
-            <p className="text-gray-400 text-sm mt-0.5">Aprende jugando</p>
+          <div style={{ background: "rgba(28,21,53,0.8)", backdropFilter: "blur(8px)" }} className=" px-4 py-2 rounded-xl">
+            <h2 className="text-2xl font-black text-[#F3F4F6]">Juegos Educativos </h2>
+            <p className="text-[#E5E7EB] text-base mt-0.5">Aprende jugando</p>
           </div>
           {juegoActivo && (
             <button onClick={() => setJuegoActivo(null)}
-              className="bg-white border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700 transition-all shadow-sm">
+              style={{ background: "#1C1535" }} className="border border-[rgba(124,58,237,0.2)] text-[#9CA3AF] px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[rgba(124,58,237,0.12)] hover:border-[rgba(124,58,237,0.3)] hover:text-purple-700 transition-all shadow-none">
               ← Volver a juegos
             </button>
           )}
@@ -648,10 +647,10 @@ export default function Juegos() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {JUEGOS.map(j => (
               <button key={j.id} onClick={() => setJuegoActivo(j.id)}
-                className={j.bg + ' border-2 ' + j.border + ' rounded-2xl p-7 text-left hover:scale-[1.02] hover:shadow-lg transition-all shadow-sm'}>
+                className={j.bg + ' border-2 ' + j.border + ' rounded-2xl p-7 text-left hover:scale-[1.02] hover:shadow-lg transition-all shadow-none'}>
                 <div className="text-5xl mb-3">{j.icono}</div>
                 <h3 className={'text-xl font-bold ' + j.text + ' mb-1'}>{j.titulo}</h3>
-                <p className="text-gray-500 text-sm">{j.desc}</p>
+                <p className="text-[rgba(156,163,175,0.7)] text-sm">{j.desc}</p>
                 <div className={'mt-4 inline-flex items-center gap-2 ' + j.text + ' text-sm font-semibold'}>
                   <span>Jugar</span><span>→</span>
                 </div>

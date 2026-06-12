@@ -24,11 +24,12 @@ const diasRestantesGracia = (vence) => {
   return dias > 0 ? dias : 0
 }
 
-const Card = ({ children, style = {}, onClick, onMouseEnter, onMouseLeave }) => (
-  <div onClick={onClick} onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave} style={{
-    background: '#1C1535', borderRadius: 16,
-    border: '1px solid rgba(124,58,237,0.25)',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.25)',
+const Card = ({ children, style = {}, onClick }) => (
+  <div onClick={onClick} style={{
+    background: 'rgba(255,255,255,0.04)', borderRadius: 16,
+    border: '1px solid rgba(124,58,237,0.18)',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+    backdropFilter: 'blur(8px)',
     ...style, cursor: onClick ? 'pointer' : 'default'
   }}>
     {children}
@@ -119,7 +120,7 @@ export default function TeacherDashboard() {
         {/* Hero Banner */}
         <Card style={{
           background: 'linear-gradient(135deg, #1a0533 0%, #2d1065 40%, #3b0f8c 70%, #1e0a4a 100%)',
-          border: '1px solid rgba(124,58,237,0.3)', overflow: 'hidden', position: 'relative', minHeight: 100
+          border: '1px solid rgba(124,58,237,0.3)', overflow: 'hidden', position: 'relative', minHeight: 160
         }}>
           {/* Decoracion */}
           <div style={{ position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.3) 0%, transparent 70%)' }} />
@@ -129,22 +130,35 @@ export default function TeacherDashboard() {
             <div key={i} style={{ position: 'absolute', left: l, top: i % 2 === 0 ? '15%' : '70%', color: 'rgba(167,139,250,0.5)', fontSize: 12 }}>✦</div>
           ))}
 
-          <div style={{ padding: '18px 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
+          <div style={{ padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
             <div>
               <h2 style={{ fontSize: 26, fontWeight: 800, color: '#fff', margin: '0 0 6px' }}>
-                {'Bienvenida, Profe ' + nombre + '! '}
+                {'Bienvenida, Profe ' + nombre + '! 👋'}
               </h2>
               <p style={{ fontSize: 14, color: 'rgba(196,181,253,0.8)', margin: '0 0 20px' }}>Hoy es un gran dia para inspirar y transformar vidas.</p>
 
-
+              {/* Mini stats en hero */}
+              {!loading && (
+                <div style={{ display: 'flex', gap: 24 }}>
+                  {stats.map((s, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 18 }}>{s.icon}</span>
+                      <div>
+                        <p style={{ fontSize: 18, fontWeight: 800, color: s.color, margin: 0, lineHeight: 1 }}>{s.val}</p>
+                        <p style={{ fontSize: 10, color: 'rgba(196,181,253,0.7)', margin: 0 }}>{s.label}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Ilustracion IA */}
             <div style={{ flexShrink: 0, position: 'relative' }}>
-              <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.4) 0%, transparent 70%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 70, filter: 'drop-shadow(0 0 30px rgba(124,58,237,0.7))' }}>
+              <div style={{ width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.4) 0%, transparent 70%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64, filter: 'drop-shadow(0 0 20px rgba(124,58,237,0.6))' }}>
                 🧠
               </div>
-              <div style={{ position: 'absolute', top: 4, right: 4, width: 32, height: 32, borderRadius: '50%', background: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff', boxShadow: '0 0 16px rgba(124,58,237,0.9)' }}>AI</div>
+              <div style={{ position: 'absolute', top: 0, right: 0, width: 28, height: 28, borderRadius: '50%', background: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, boxShadow: '0 0 12px rgba(124,58,237,0.8)' }}>AI</div>
             </div>
           </div>
         </Card>

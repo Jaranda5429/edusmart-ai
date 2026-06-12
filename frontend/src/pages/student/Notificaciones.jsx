@@ -11,7 +11,6 @@ const NAV = [
   { icon: '📝', label: 'Tareas', path: '/estudiante/tareas' },
   { icon: '📈', label: 'Progreso', path: '/estudiante/progreso' },
   { icon: '🎮', label: 'Juegos', path: '/estudiante/juegos' },
-  { icon: '🔔', label: 'Notificaciones', path: '/estudiante/notificaciones' },
 ]
 
 const fmt = iso => {
@@ -152,8 +151,11 @@ export default function StudentNotificaciones() {
       })
     })
 
-    // Ordenar por fecha más reciente
-    return lista.sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+    // Ordenar por fecha mas reciente y descartar las viejas (mas de 7 dias)
+    const TRES_DIAS = 3 * 24 * 60 * 60 * 1000
+    return lista
+      .filter(n => (ahora - new Date(n.fecha).getTime()) <= TRES_DIAS)
+      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
   }, [inscripciones, miId, ahora, notisBD])
 
   const noLeidas = notificaciones.filter(n => !leidas.includes(n.id))
@@ -170,10 +172,10 @@ export default function StudentNotificaciones() {
   }
 
   const COLORES = {
-    purple: 'bg-purple-50 border-purple-200 text-purple-600',
-    orange: 'bg-orange-50 border-orange-200 text-orange-600',
-    red: 'bg-red-50 border-red-200 text-red-600',
-    green: 'bg-green-50 border-green-200 text-green-600',
+    purple: 'bg-[rgba(124,58,237,0.15)] border-[rgba(124,58,237,0.3)] text-[#A78BFA]',
+    orange: 'bg-[rgba(245,158,11,0.12)] border-[rgba(245,158,11,0.3)] text-[#FBBF24]',
+    red: 'bg-[rgba(239,68,68,0.1)] border-[rgba(239,68,68,0.3)] text-[#F87171]',
+    green: 'bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.3)] text-[#34D399]',
   }
 
   return (
@@ -181,15 +183,18 @@ export default function StudentNotificaciones() {
       <div className="max-w-3xl mx-auto px-5 py-6 space-y-6">
 
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h2 className="text-2xl font-black text-gray-900">Notificaciones 🔔</h2>
-            <p className="text-gray-400 text-sm mt-0.5">
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#7C3AED,#4C1D95)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, boxShadow: "0 4px 14px rgba(124,58,237,0.4)", flexShrink: 0 }}>🔔</div>
+            <div>
+            <h2 style={{ fontSize: 20, fontWeight: 900, color: "#E5E7EB", margin: 0 }}>Notificaciones</h2>
+            <p style={{ fontSize: 12, color: "rgba(167,139,250,0.7)", margin: 0, fontWeight: 500 }}>
               {noLeidas.length > 0 ? (noLeidas.length + ' sin leer') : 'Estas al dia'}
             </p>
+            </div>
           </div>
           {noLeidas.length > 0 && (
             <button onClick={marcarTodas}
-              className="text-sm font-semibold text-purple-600 hover:text-purple-700 bg-white border border-gray-200 px-4 py-2 rounded-xl shadow-sm hover:bg-purple-50 transition-all">
+              className="text-sm font-semibold text-purple-600 hover:text-purple-700 bg-[#1C1535] border border-[rgba(124,58,237,0.2)] px-4 py-2 rounded-xl shadow-none hover:bg-[rgba(124,58,237,0.12)] transition-all">
               Marcar todas leidas
             </button>
           )}
@@ -198,20 +203,20 @@ export default function StudentNotificaciones() {
         <div className="flex gap-2">
           {[{ id: 'todas', label: 'Todas' }, { id: 'sin_leer', label: 'Sin leer' }].map(f => (
             <button key={f.id} onClick={() => setFiltro(f.id)}
-              className={'px-4 py-2 rounded-xl font-semibold text-sm transition-all border ' + (filtro === f.id ? 'bg-purple-600 text-white border-purple-600 shadow-md' : 'bg-white text-gray-600 border-gray-200 hover:border-purple-300')}>
+              className={'px-4 py-2 rounded-xl font-semibold text-sm transition-all border ' + (filtro === f.id ? 'bg-purple-600 text-white border-purple-600' : 'bg-[rgba(124,58,237,0.08)] text-[rgba(167,139,250,0.8)] border-[rgba(124,58,237,0.2)] hover:bg-[rgba(124,58,237,0.15)]')}>
               {f.label}
               {f.id === 'sin_leer' && noLeidas.length > 0 && (
-                <span className={'ml-2 text-xs px-1.5 py-0.5 rounded-full ' + (filtro === f.id ? 'bg-white/20' : 'bg-purple-100 text-purple-600')}>{noLeidas.length}</span>
+                <span className={'ml-2 text-xs px-1.5 py-0.5 rounded-full ' + (filtro === f.id ? 'bg-[rgba(255,255,255,0.08)]' : 'bg-[rgba(124,58,237,0.15)] text-purple-600')}>{noLeidas.length}</span>
               )}
             </button>
           ))}
         </div>
 
         {mostradas.length === 0 ? (
-          <div className="bg-white rounded-2xl p-14 text-center shadow-sm">
+          <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className="p-14 text-center shadow-none">
             <span className="text-5xl">🎉</span>
-            <p className="text-gray-500 mt-3 font-semibold">{filtro === 'sin_leer' ? 'Sin notificaciones pendientes' : 'Sin notificaciones'}</p>
-            <p className="text-gray-400 text-sm mt-1">Te avisaremos cuando haya novedades</p>
+            <p className="text-[rgba(156,163,175,0.7)] mt-3 font-semibold">{filtro === 'sin_leer' ? 'Sin notificaciones pendientes' : 'Sin notificaciones'}</p>
+            <p className="text-[rgba(156,163,175,0.5)] text-sm mt-1">Te avisaremos cuando haya novedades</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -219,17 +224,17 @@ export default function StudentNotificaciones() {
               const leida = leidas.includes(n.id)
               return (
                 <button key={n.id} onClick={() => irA(n)}
-                  className={'w-full text-left rounded-2xl p-4 shadow-sm hover:shadow-md transition-all flex items-center gap-4 border-2 ' + (leida ? 'bg-white border-transparent opacity-70' : 'bg-white border-purple-100')}>
+                  style={{ width: '100%', textAlign: 'left', borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, border: leida ? '1px solid rgba(124,58,237,0.12)' : '1px solid rgba(124,58,237,0.3)', background: leida ? 'rgba(28,21,53,0.6)' : '#1C1535', cursor: 'pointer', transition: 'all .15s', borderLeft: leida ? '3px solid rgba(124,58,237,0.15)' : '3px solid #7C3AED' }}>
                   <div className={'w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 border ' + (COLORES[n.color] || COLORES.purple)}>
                     {n.icono}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="font-bold text-gray-800 text-sm">{n.titulo}</p>
-                      {!leida && <span className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0" />}
+                      <p style={{ fontWeight: 700, color: "#E5E7EB", fontSize: 13, margin: 0 }}>{n.titulo}</p>
+                      {!leida && <span className="w-2 h-2 bg-[rgba(124,58,237,0.12)]0 rounded-full flex-shrink-0" />}
                     </div>
-                    <p className="text-gray-500 text-sm truncate">{n.mensaje}</p>
-                    <p className="text-gray-400 text-xs mt-0.5">{haceTiempo(n.fecha)}</p>
+                    <p className="text-[rgba(156,163,175,0.7)] text-sm truncate">{n.mensaje}</p>
+                    <p className="text-[rgba(156,163,175,0.5)] text-xs mt-0.5">{haceTiempo(n.fecha)}</p>
                   </div>
                   <span className="text-gray-300 text-lg flex-shrink-0">→</span>
                 </button>

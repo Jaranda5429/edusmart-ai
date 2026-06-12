@@ -65,15 +65,7 @@ export default function AIBot() {
             <button onClick={() => setOpen(false)} className="text-white/70 hover:text-white text-lg w-6 h-6 flex items-center justify-center">×</button>
           </div>
 
-          {cursos.length > 0 && (
-            <div className="px-3 py-2 border-b border-gray-100">
-              <select value={cursoId} onChange={e => setCursoId(e.target.value)} className="w-full text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 focus:outline-none bg-gray-50">
-                <option value="">📚 Contexto general</option>
-                {cursos.map(c => <option key={c.id} value={c.id}>📖 {c.nombre}</option>)}
-              </select>
-            </div>
-          )}
-
+          
           <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0">
             {msgs.map((m, i) => (
               <div key={i} className={`flex ${m.de === 'yo' ? 'justify-end' : 'justify-start'}`}>

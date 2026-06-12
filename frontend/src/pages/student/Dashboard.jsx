@@ -5,13 +5,24 @@ import { useProfesor } from '../../context/ProfesorContext'
 import Layout from '../../components/Layout'
 
 const NAV = [
-  { icon: '🏠', label: 'Inicio', path: '/estudiante/dashboard' },
-  { icon: '📚', label: 'Mis Cursos', path: '/estudiante/cursos' },
-  { icon: '📝', label: 'Tareas', path: '/estudiante/tareas' },
-  { icon: '📈', label: 'Progreso', path: '/estudiante/progreso' },
-  { icon: '🎮', label: 'Juegos', path: '/estudiante/juegos' },
-  { icon: '🔔', label: 'Notificaciones', path: '/estudiante/notificaciones' },
+  { icon: '🏠', label: 'Inicio',         path: '/estudiante/dashboard' },
+  { icon: '📚', label: 'Mis Cursos',     path: '/estudiante/cursos' },
+  { icon: '📝', label: 'Tareas',         path: '/estudiante/tareas' },
+  { icon: '📈', label: 'Progreso',       path: '/estudiante/progreso' },
+  { icon: '🎮', label: 'Juegos',         path: '/estudiante/juegos' },
 ]
+
+const Card = ({ children, style = {}, onClick }) => (
+  <div onClick={onClick} style={{
+    background: 'rgba(255,255,255,0.04)', borderRadius: 16,
+    border: '1px solid rgba(124,58,237,0.18)',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+    backdropFilter: 'blur(8px)',
+    ...style, cursor: onClick ? 'pointer' : 'default'
+  }}>
+    {children}
+  </div>
+)
 
 export default function StudentDashboard() {
   const { usuario } = useAuth()
@@ -22,16 +33,12 @@ export default function StudentDashboard() {
   const [resultado, setResultado] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  const totalActs = inscripciones.reduce((a, i) =>
-    a + (i.materia?.actividades?.length || 0), 0)
+  const totalActs = inscripciones.reduce((a, i) => a + (i.materia?.actividades?.length || 0), 0)
   const entregadas = inscripciones.reduce((a, i) =>
-    a + (i.materia?.actividades?.filter(act =>
-      act.entregas?.some(e => e.entregado)
-    ).length || 0), 0)
+    a + (i.materia?.actividades?.filter(act => act.entregas?.some(e => e.entregado)).length || 0), 0)
   const pendientes = inscripciones.reduce((a, i) =>
     a + (i.materia?.actividades?.filter(act =>
-      !act.entregas?.some(e => e.entregado) &&
-      new Date(act.fechaLimite) >= new Date()
+      !act.entregas?.some(e => e.entregado) && new Date(act.fechaLimite) >= new Date()
     ).length || 0), 0)
   const califs = inscripciones.flatMap(i =>
     i.materia?.actividades?.flatMap(act =>
@@ -54,130 +61,174 @@ export default function StudentDashboard() {
     if (!clave.trim()) return
     setLoading(true)
     setResultado(null)
-    const res = await matricularConClave(clave.trim(), {
-      nombre: usuario?.nombre || '',
-      email: usuario?.email || ''
-    })
+    const res = await matricularConClave(clave.trim(), { nombre: usuario?.nombre || '', email: usuario?.email || '' })
     setResultado(res)
     setLoading(false)
-    if (res.ok) {
-      setClave('')
-      await cargarInscripciones()
-    }
+    if (res.ok) { setClave(''); await cargarInscripciones() }
   }
+
+  const nombre = usuario?.nombre?.split(' ')[0] || ''
+
+  const stats = [
+    { label: 'Actividades', value: totalActs,                         icon: '📝', color: '#A78BFA', bg: 'rgba(124,58,237,0.2)' },
+    { label: 'Entregadas',  value: entregadas,                        icon: '✅', color: '#34D399', bg: 'rgba(16,185,129,0.2)' },
+    { label: 'Pendientes',  value: pendientes,                        icon: '⏳', color: '#FBBF24', bg: 'rgba(245,158,11,0.2)' },
+    { label: 'Promedio',    value: promedio ? (promedio + '/10') : 'S/N', icon: '⭐', color: '#60A5FA', bg: 'rgba(59,130,246,0.2)' },
+  ]
 
   return (
     <Layout rol="ESTUDIANTE" navItems={NAV}>
-      <div className="max-w-6xl mx-auto px-5 py-6 space-y-6">
+      <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
-        <div className="rounded-2xl p-7 flex items-center justify-between"
-          style={{ background: 'linear-gradient(135deg,#4C1D95,#7C3AED,#A78BFA)' }}>
-          <div>
-            <h2 className="text-2xl font-bold text-white">
-              <span>{'Hola, ' + (usuario?.nombre?.split(' ')[0] || '') + '!'}</span>
-            </h2>
-            <p className="text-purple-200 text-sm mt-1">
-              <span>{inscripciones.length > 0 ? (inscripciones.length + ' materia' + (inscripciones.length !== 1 ? 's' : '') + ' inscrita' + (inscripciones.length !== 1 ? 's' : '')) : 'Ingresa tu codigo de matricula para empezar'}</span>
-            </p>
-          </div>
-          <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white font-bold text-2xl hidden md:flex">
-            {usuario?.nombre?.charAt(0)?.toUpperCase()}
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-6 shadow-sm border-2 border-purple-200">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-xl">🔑</div>
+        {/* Hero */}
+        <Card style={{
+          background: 'linear-gradient(135deg, #1a0533 0%, #2d1065 40%, #3b0f8c 70%, #1e0a4a 100%)',
+          border: '1px solid rgba(124,58,237,0.3)', overflow: 'hidden', position: 'relative', minHeight: 150
+        }}>
+          <div style={{ position: 'absolute', right: -40, top: -40, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.3) 0%, transparent 70%)' }} />
+          {['8%','22%','48%','70%','88%'].map((l, i) => (
+            <div key={i} style={{ position: 'absolute', left: l, top: i % 2 === 0 ? '15%' : '70%', color: 'rgba(167,139,250,0.45)', fontSize: 12 }}>✦</div>
+          ))}
+          <div style={{ padding: '28px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', zIndex: 1 }}>
             <div>
-              <h3 className="font-bold text-gray-800">Matricula con codigo</h3>
-              <p className="text-gray-400 text-sm">Ingresa el codigo que te dio tu profesor</p>
+              <h2 style={{ fontSize: 26, fontWeight: 800, color: '#fff', margin: '0 0 4px' }}>
+                {'Hola, ' + nombre + '!'}
+              </h2>
+              <p style={{ fontSize: 14, color: 'rgba(196,181,253,0.8)', margin: '0 0 16px' }}>
+                {inscripciones.length > 0
+                  ? inscripciones.length + ' materia' + (inscripciones.length !== 1 ? 's' : '') + ' inscrita' + (inscripciones.length !== 1 ? 's' : '')
+                  : 'Ingresa tu codigo de matricula para empezar'}
+              </p>
+              {/* XP bar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>⭐</span>
+                <div>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Nivel {inscripciones.length + 1}</span>
+                    <span style={{ fontSize: 12, color: 'rgba(196,181,253,0.7)' }}>{entregadas * 50} / 600 XP</span>
+                  </div>
+                  <div style={{ width: 160, height: 7, background: 'rgba(255,255,255,0.15)', borderRadius: 999 }}>
+                    <div style={{ width: Math.min((entregadas * 50 / 600) * 100, 100) + '%', height: '100%', background: '#FBBF24', borderRadius: 999 }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style={{ fontSize: 64, filter: 'drop-shadow(0 0 20px rgba(124,58,237,0.6))', flexShrink: 0 }}>🌟</div>
+          </div>
+        </Card>
+
+        {/* Matricula */}
+        <Card style={{ padding: 20, borderLeft: '3px solid #7C3AED' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(124,58,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>🔑</div>
+            <div>
+              <p style={{ fontWeight: 700, color: '#E5E7EB', margin: 0, fontSize: 14 }}>Matricula con codigo</p>
+              <p style={{ fontSize: 12, color: 'rgba(156,163,175,0.7)', margin: 0 }}>Ingresa el codigo que te dio tu profesor</p>
             </div>
           </div>
-          <div className="flex gap-3 max-w-lg">
+          <div style={{ display: 'flex', gap: 10, maxWidth: 420 }}>
             <input
               value={clave}
               onChange={e => { setClave(e.target.value.toUpperCase()); setResultado(null) }}
               onKeyDown={e => { if (e.key === 'Enter') handleMatricular() }}
-              placeholder="Ej: MAT6A"
-              maxLength={12}
-              className="flex-1 border-2 border-gray-200 focus:border-purple-400 rounded-xl px-4 py-3 text-center text-xl font-black tracking-widest uppercase focus:outline-none focus:ring-2 focus:ring-purple-300 transition-all"
+              placeholder="Ej: MAT6A" maxLength={12}
+              style={{ flex: 1, background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(124,58,237,0.3)', borderRadius: 10, padding: '10px 14px', fontFamily: 'Poppins,sans-serif', fontSize: 16, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 3, textAlign: 'center', color: '#E5E7EB', outline: 'none' }}
+              onFocus={e => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.15)' }}
+              onBlur={e => { e.target.style.borderColor = 'rgba(124,58,237,0.3)'; e.target.style.boxShadow = 'none' }}
             />
             <button onClick={handleMatricular} disabled={loading || !clave.trim()}
-              className="bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-purple-700 transition-all shadow-md disabled:opacity-40 text-sm">
+              style={{ background: '#7C3AED', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 20px', fontFamily: 'Poppins,sans-serif', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: (!clave.trim() || loading) ? 0.5 : 1, boxShadow: '0 4px 14px rgba(124,58,237,0.4)' }}>
               {loading ? '...' : 'Matricularme'}
             </button>
           </div>
           {resultado && (
-            <div className={'mt-3 rounded-xl p-3 text-sm font-semibold border ' + (resultado.ok ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-200')}>
-              <span>{resultado.ok ? '✅ ' : '❌ '}{resultado.msg}</span>
-            </div>
+            <p style={{ fontSize: 12, marginTop: 8, fontWeight: 600, color: resultado.ok ? '#34D399' : '#F87171' }}>
+              {resultado.ok ? '✅ ' : '❌ '}{resultado.msg}
+            </p>
           )}
-        </div>
+        </Card>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Actividades', value: totalActs, icon: '📝', bg: 'bg-purple-50', txt: 'text-purple-700' },
-            { label: 'Entregadas', value: entregadas, icon: '✅', bg: 'bg-green-50', txt: 'text-green-700' },
-            { label: 'Pendientes', value: pendientes, icon: '⏳', bg: 'bg-yellow-50', txt: 'text-yellow-700' },
-            { label: 'Promedio', value: promedio ? (promedio + '/10') : 'S/N', icon: '⭐', bg: 'bg-blue-50', txt: 'text-blue-700' },
-          ].map(s => (
-            <div key={s.label} className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all">
-              <div className={'w-11 h-11 ' + s.bg + ' rounded-xl flex items-center justify-center text-2xl mb-3'}>{s.icon}</div>
-              <div className={'text-3xl font-black ' + s.txt + ' mb-1'}>{s.value}</div>
-              <div className="text-gray-600 text-sm font-semibold">{s.label}</div>
-            </div>
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+          {stats.map((s, i) => (
+            <Card key={i} style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{s.icon}</div>
+              <div>
+                <p style={{ fontSize: 26, fontWeight: 900, color: s.color, margin: 0, lineHeight: 1 }}>{s.value}</p>
+                <p style={{ fontSize: 11.5, color: 'rgba(156,163,175,0.7)', margin: '4px 0 0' }}>{s.label}</p>
+              </div>
+            </Card>
           ))}
         </div>
 
+        {/* Accesos rapidos */}
         <div>
-          <h3 className="font-bold text-gray-800 text-lg mb-4">Accesos rapidos</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <p style={{ fontSize: 15, fontWeight: 700, color: '#A78BFA', margin: '0 0 12px' }}>Accesos rapidos</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
             {[
-              { icon: '📚', label: 'Mis Cursos', sub: 'Ver materias', ruta: '/estudiante/cursos', bg: 'bg-purple-50', txt: 'text-purple-700' },
-              { icon: '📝', label: 'Tareas', sub: 'Pendientes', ruta: '/estudiante/tareas', bg: 'bg-blue-50', txt: 'text-blue-700' },
-              { icon: '📈', label: 'Progreso', sub: 'Calificaciones', ruta: '/estudiante/progreso', bg: 'bg-green-50', txt: 'text-green-700' },
-              { icon: '🎮', label: 'Juegos', sub: 'Aprende jugando', ruta: '/estudiante/juegos', bg: 'bg-yellow-50', txt: 'text-yellow-700' },
-            ].map(item => (
-              <button key={item.label} onClick={() => navigate(item.ruta)}
-                className="bg-white rounded-2xl p-5 text-left hover:-translate-y-1 hover:shadow-md transition-all shadow-sm border-2 border-transparent hover:border-purple-100">
-                <div className={'w-11 h-11 ' + item.bg + ' rounded-xl flex items-center justify-center text-2xl mb-3'}>{item.icon}</div>
-                <h4 className={'font-bold ' + item.txt + ' text-sm'}>{item.label}</h4>
-                <p className="text-gray-400 text-xs mt-0.5">{item.sub}</p>
-              </button>
+              { icon: '📚', label: 'Mis Cursos',  sub: 'Ver materias',      ruta: '/estudiante/cursos',   color: '#A78BFA', bg: 'rgba(124,58,237,0.2)' },
+              { icon: '📝', label: 'Tareas',       sub: 'Pendientes',         ruta: '/estudiante/tareas',   color: '#60A5FA', bg: 'rgba(59,130,246,0.2)'  },
+              { icon: '📈', label: 'Progreso',     sub: 'Calificaciones',     ruta: '/estudiante/progreso', color: '#34D399', bg: 'rgba(16,185,129,0.2)'  },
+              { icon: '🎮', label: 'Juegos',       sub: 'Aprende jugando',    ruta: '/estudiante/juegos',   color: '#FBBF24', bg: 'rgba(245,158,11,0.2)'  },
+            ].map((item, i) => (
+              <Card key={i} onClick={() => navigate(item.ruta)}
+                style={{ padding: '18px', textAlign: 'center', transition: 'transform .15s' }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                <div style={{ width: 46, height: 46, borderRadius: 13, background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, margin: '0 auto 10px' }}>{item.icon}</div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: item.color, margin: '0 0 3px' }}>{item.label}</p>
+                <p style={{ fontSize: 11, color: 'rgba(156,163,175,0.6)', margin: 0 }}>{item.sub}</p>
+              </Card>
             ))}
           </div>
         </div>
 
+        {/* Proximas actividades */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-gray-800 text-lg">Proximas actividades</h3>
-            <button onClick={() => navigate('/estudiante/tareas')} className="text-purple-600 text-sm font-semibold hover:underline">Ver todas</button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <p style={{ fontSize: 15, fontWeight: 700, color: '#A78BFA', margin: 0 }}>Proximas actividades</p>
+            <button onClick={() => navigate('/estudiante/tareas')}
+              style={{ fontSize: 12, color: '#7C3AED', background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>
+              Ver todas
+            </button>
           </div>
           {proximas.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center shadow-sm">
-              <span className="text-5xl">{inscripciones.length > 0 ? '🎉' : '📭'}</span>
-              <p className="text-gray-500 mt-3 font-semibold"><span>{inscripciones.length > 0 ? 'Todo al dia!' : 'Sin actividades aun'}</span></p>
-              <p className="text-gray-400 text-sm mt-1"><span>{inscripciones.length > 0 ? 'No tienes pendientes' : 'Ingresa tu codigo arriba para matricularte'}</span></p>
-            </div>
+            <Card style={{ padding: '40px 24px', textAlign: 'center' }}>
+              <span style={{ fontSize: 40 }}>{inscripciones.length > 0 ? '🎉' : '📭'}</span>
+              <p style={{ color: 'rgba(209,213,219,0.6)', fontSize: 14, marginTop: 10, fontWeight: 600 }}>
+                {inscripciones.length > 0 ? 'Todo al dia!' : 'Sin actividades aun'}
+              </p>
+              <p style={{ color: 'rgba(156,163,175,0.5)', fontSize: 12, marginTop: 4 }}>
+                {inscripciones.length > 0 ? 'No tienes pendientes' : 'Ingresa tu codigo arriba para matricularte'}
+              </p>
+            </Card>
           ) : (
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {proximas.map(act => {
                 const dias = Math.ceil((new Date(act.fechaLimite) - new Date()) / (1000 * 60 * 60 * 24))
                 const urgente = dias <= 2
                 const diasTxt = dias <= 0 ? 'Hoy!' : dias === 1 ? 'Manana' : (dias + ' dias')
                 return (
                   <button key={act.id} onClick={() => navigate('/estudiante/cursos')}
-                    className={'w-full bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all text-left flex items-center gap-4' + (urgente ? ' border-l-4 border-orange-400' : '')}>
-                    <div className={'w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ' + (urgente ? 'bg-orange-100' : 'bg-purple-50')}>
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 14,
+                      padding: '14px 18px', borderRadius: 14, border: 'none', cursor: 'pointer', textAlign: 'left',
+                      background: urgente ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.04)',
+                      borderLeft: urgente ? '3px solid #FBBF24' : '3px solid rgba(124,58,237,0.3)',
+                      transition: 'all .15s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = urgente ? 'rgba(245,158,11,0.14)' : 'rgba(124,58,237,0.1)'}
+                    onMouseLeave={e => e.currentTarget.style.background = urgente ? 'rgba(245,158,11,0.08)' : 'rgba(255,255,255,0.04)'}>
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: urgente ? 'rgba(245,158,11,0.2)' : 'rgba(124,58,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
                       {urgente ? '⚠️' : '📝'}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-800 text-sm truncate">{act.titulo}</p>
-                      <p className="text-xs text-gray-400 mt-0.5"><span>{(act.materiaNombre || '') + ' · ' + (act.periodoNombre || '')}</span></p>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, fontSize: 13.5, color: '#F3F4F6', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{act.titulo}</p>
+                      <p style={{ fontSize: 11, color: 'rgba(156,163,175,0.6)', margin: '3px 0 0' }}>{(act.materiaNombre || '') + ' · ' + (act.periodoNombre || '')}</p>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className={'text-xs font-bold ' + (urgente ? 'text-orange-600' : 'text-gray-500')}>{diasTxt}</p>
-                      <p className="text-xs text-gray-400">{act.fechaLimite}</p>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: urgente ? '#FBBF24' : 'rgba(156,163,175,0.7)', margin: 0 }}>{diasTxt}</p>
+                      <p style={{ fontSize: 10, color: 'rgba(156,163,175,0.4)', margin: '2px 0 0' }}>{act.fechaLimite}</p>
                     </div>
                   </button>
                 )
@@ -185,6 +236,7 @@ export default function StudentDashboard() {
             </div>
           )}
         </div>
+
       </div>
     </Layout>
   )

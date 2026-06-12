@@ -71,15 +71,15 @@ const Asistente = () => {
 
   return (
     <div className="min-h-screen bg-grisSuave flex">
-      <div className="w-64 bg-white shadow-lg flex flex-col">
+      <div className="w-64 bg-[#1C1535] flex flex-col border-r border-[rgba(124,58,237,0.15)]">
         <div className="p-6 border-b">
-          <h1 className="text-xl font-bold text-gray-800">EduSmart <span className="text-purple-600">AI+</span></h1>
+          <h1 className="text-xl font-bold text-[#E5E7EB]">EduSmart <span className="text-purple-600">AI+</span></h1>
         </div>
         <nav className="flex-1 p-4 space-y-1">
           {[
             { icon: '🏠', label: 'Inicio', path: '/profesor/dashboard' },
             { icon: '📚', label: 'Mis Cursos', path: '/profesor/cursos' },
-            { icon: '👨‍🎓', label: 'Estudiantes', path: '/profesor/estudiantes' },
+            { icon: '👨🎓', label: 'Estudiantes', path: '/profesor/estudiantes' },
             { icon: '📝', label: 'Actividades', path: '/profesor/actividades' },
             { icon: '📊', label: 'Analíticas', path: '/profesor/analiticas' },
             { icon: '🤖', label: 'Asistente IA', path: '/profesor/asistente' },
@@ -90,7 +90,7 @@ const Asistente = () => {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm font-medium ${
                 item.path === '/profesor/asistente'
                   ? 'bg-lavanda text-purple-700'
-                  : 'text-gray-600 hover:bg-lavanda hover:text-purple-700'
+                  : 'text-[#9CA3AF] hover:bg-lavanda hover:text-purple-700'
               }`}
             >
               <span>{item.icon}</span>
@@ -110,10 +110,10 @@ const Asistente = () => {
       </div>
 
       <div className="flex-1 flex flex-col">
-        <div className="bg-white shadow-sm px-8 py-4 flex items-center justify-between">
+        <div style={{ background: "#1C1535" }} className="shadow-sm px-8 py-4 flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-gray-800">Asistente IA 🤖</h2>
-            <p className="text-gray-500 text-sm">Tu asistente para crear contenido educativo</p>
+            <h2 className="text-xl font-bold text-[#E5E7EB]">Asistente IA 🤖</h2>
+            <p className="text-[rgba(156,163,175,0.7)] text-sm">Tu asistente para crear contenido educativo</p>
           </div>
           <div className="w-10 h-10 bg-lavanda rounded-full flex items-center justify-center text-purple-600 font-bold">
             {usuario?.nombre?.charAt(0)}
@@ -131,7 +131,7 @@ const Asistente = () => {
                     {msg.rol === 'ia' ? '🤖' : usuario?.nombre?.charAt(0)}
                   </div>
                   <div className={`max-w-lg px-4 py-3 rounded-2xl text-sm ${
-                    msg.rol === 'ia' ? 'bg-grisSuave text-gray-800' : 'bg-purple-600 text-white'
+                    msg.rol === 'ia' ? 'bg-grisSuave text-[#E5E7EB]' : 'bg-purple-600 text-white'
                   }`}>
                     <p className="whitespace-pre-wrap">{msg.contenido}</p>
                   </div>
@@ -158,7 +158,7 @@ const Asistente = () => {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Escribe tu pregunta aquí..."
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
+                  className="flex-1 border border-[rgba(124,58,237,0.2)] rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 resize-none"
                   rows={2}
                 />
                 <button
@@ -173,15 +173,15 @@ const Asistente = () => {
           </div>
 
           <div className="w-64 space-y-4">
-            <div className="bg-white rounded-2xl shadow-sm p-4">
-              <h3 className="font-bold text-gray-800 mb-3 text-sm">Modo de ayuda</h3>
+            <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className=" p-4">
+              <h3 className="font-bold text-[#E5E7EB] mb-3 text-sm">Modo de ayuda</h3>
               <div className="space-y-2">
                 {modos.map((m) => (
                   <button
                     key={m.value}
                     onClick={() => setModo(m.value)}
                     className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all ${
-                      modo === m.value ? 'bg-lavanda text-purple-700 font-medium' : 'text-gray-600 hover:bg-grisSuave'
+                      modo === m.value ? 'bg-lavanda text-purple-700 font-medium' : 'text-[#9CA3AF] hover:bg-grisSuave'
                     }`}
                   >
                     {m.label}
@@ -190,12 +190,12 @@ const Asistente = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm p-4">
-              <h3 className="font-bold text-gray-800 mb-3 text-sm">Contexto del curso</h3>
+            <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className=" p-4">
+              <h3 className="font-bold text-[#E5E7EB] mb-3 text-sm">Contexto del curso</h3>
               <select
                 value={cursoSeleccionado}
                 onChange={(e) => setCursoSeleccionado(e.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                className="w-full border border-[rgba(124,58,237,0.2)] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
               >
                 <option value="">Sin curso específico</option>
                 {cursos.map((curso) => (
@@ -204,8 +204,8 @@ const Asistente = () => {
               </select>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm p-4">
-              <h3 className="font-bold text-gray-800 mb-3 text-sm">Sugerencias</h3>
+            <div style={{ background: "#1C1535", borderRadius: 16, border: "1px solid rgba(124,58,237,0.18)" }} className=" p-4">
+              <h3 className="font-bold text-[#E5E7EB] mb-3 text-sm">Sugerencias</h3>
               <div className="space-y-2">
                 {[
                   'Genera 5 preguntas sobre este tema',
@@ -217,7 +217,7 @@ const Asistente = () => {
                   <button
                     key={sugerencia}
                     onClick={() => setInput(sugerencia)}
-                    className="w-full text-left px-3 py-2 rounded-xl text-xs text-gray-600 hover:bg-lavanda hover:text-purple-700 transition-all border border-gray-100"
+                    className="w-full text-left px-3 py-2 rounded-xl text-xs text-[#9CA3AF] hover:bg-lavanda hover:text-purple-700 transition-all border border-[rgba(124,58,237,0.15)]"
                   >
                     {sugerencia}
                   </button>

@@ -9,7 +9,6 @@ const navItems = [
   { icon: '🎮', label: 'Juegos', path: '/estudiante/juegos' },
   { icon: '🤖', label: 'Asistente IA', path: '/estudiante/asistente' },
   { icon: '📈', label: 'Mi Progreso', path: '/estudiante/progreso' },
-  { icon: '🔔', label: 'Notificaciones', path: '/estudiante/notificaciones' },
   { icon: '👤', label: 'Mi Perfil', path: '/estudiante/perfil' },
 ]
 

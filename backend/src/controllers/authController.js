@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const { PrismaClient } = require('@prisma/client')
+const { enviarCodigoRecuperacion } = require('../utils/mailer')
 const prisma = new PrismaClient()
 
 const PRECIOS = { mensual: 70000, anual: 700000 }
@@ -196,4 +197,70 @@ const cambiarPassword = async (req, res) => {
   }
 }
 
-module.exports = { register, login, pagarMembresia, renovarMembresia, miPerfil, estadoMembresia, cambiarPassword }
+// ── RECUPERACION DE CONTRASENA ────────────────────────────────────────────────
+
+const solicitarRecuperacion = async (req, res) => {
+  try {
+    const { email } = req.body
+    if (!email) return res.status(400).json({ message: 'El correo es requerido' })
+
+    const usuario = await prisma.user.findUnique({ where: { email } })
+    if (!usuario) return res.status(404).json({ message: 'No existe una cuenta con ese correo' })
+
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString()
+    const resetExpira = new Date(Date.now() + 15 * 60 * 1000)
+
+    await prisma.user.update({ where: { id: usuario.id }, data: { resetCodigo: codigo, resetExpira } })
+
+    await enviarCodigoRecuperacion(usuario.email, usuario.nombre, codigo)
+
+    res.json({ message: 'Codigo enviado al correo' })
+  } catch (err) {
+    console.error('ERROR SOLICITAR RECUPERACION:', err)
+    res.status(500).json({ message: 'Error enviando el codigo', error: err.message })
+  }
+}
+
+const verificarCodigoRecuperacion = async (req, res) => {
+  try {
+    const { email, codigo } = req.body
+    if (!email || !codigo) return res.status(400).json({ message: 'Faltan datos' })
+
+    const usuario = await prisma.user.findUnique({ where: { email } })
+    if (!usuario || !usuario.resetCodigo || !usuario.resetExpira)
+      return res.status(400).json({ message: 'Codigo invalido o expirado' })
+
+    if (usuario.resetCodigo !== codigo) return res.status(400).json({ message: 'Codigo incorrecto' })
+    if (new Date() > new Date(usuario.resetExpira)) return res.status(400).json({ message: 'El codigo ha expirado' })
+
+    res.json({ message: 'Codigo valido' })
+  } catch (err) {
+    console.error('ERROR VERIFICAR CODIGO:', err)
+    res.status(500).json({ message: 'Error verificando el codigo', error: err.message })
+  }
+}
+
+const restablecerPassword = async (req, res) => {
+  try {
+    const { email, codigo, nueva } = req.body
+    if (!email || !codigo || !nueva) return res.status(400).json({ message: 'Faltan datos' })
+    if (nueva.length < 6) return res.status(400).json({ message: 'La nueva contrasena debe tener al menos 6 caracteres' })
+
+    const usuario = await prisma.user.findUnique({ where: { email } })
+    if (!usuario || !usuario.resetCodigo || !usuario.resetExpira)
+      return res.status(400).json({ message: 'Codigo invalido o expirado' })
+
+    if (usuario.resetCodigo !== codigo) return res.status(400).json({ message: 'Codigo incorrecto' })
+    if (new Date() > new Date(usuario.resetExpira)) return res.status(400).json({ message: 'El codigo ha expirado' })
+
+    const hash = await bcrypt.hash(nueva, 10)
+    await prisma.user.update({ where: { id: usuario.id }, data: { password: hash, resetCodigo: null, resetExpira: null } })
+
+    res.json({ message: 'Contrasena restablecida correctamente' })
+  } catch (err) {
+    console.error('ERROR RESTABLECER PASSWORD:', err)
+    res.status(500).json({ message: 'Error restableciendo la contrasena', error: err.message })
+  }
+}
+
+module.exports = { register, login, pagarMembresia, renovarMembresia, miPerfil, estadoMembresia, cambiarPassword, solicitarRecuperacion, verificarCodigoRecuperacion, restablecerPassword }

@@ -1,44 +1,33 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { academicService } from '../../services/api'
 import Layout from '../../components/Layout'
 
-const NAV = [
-  { icon: '🏠', label: 'Inicio', path: '/profesor/dashboard' },
-  { icon: '📚', label: 'Mis Cursos', path: '/profesor/cursos' },
-  { icon: '👨‍🎓', label: 'Estudiantes', path: '/profesor/estudiantes' },
-  { icon: '📊', label: 'Analíticas', path: '/profesor/analiticas' },
-]
-
 export default function Estudiantes() {
+  const navigate = useNavigate()
   const [periodos, setPeriodos] = useState([])
   const [loading, setLoading] = useState(true)
   const [vista, setVista] = useState('periodos')
   const [periodoSel, setPeriodoSel] = useState(null)
   const [gradoSel, setGradoSel] = useState(null)
   const [busqueda, setBusqueda] = useState('')
+  const [tab, setTab] = useState('lista') // 'lista' | 'notas'
+  const [estSel, setEstSel] = useState(null) // estudiante seleccionado para ver perfil
 
   useEffect(() => {
     const cargar = async () => {
       try {
         const res = await academicService.getEstadisticas()
         setPeriodos(res.data || [])
-      } catch (err) {
-        console.error('Error cargando estudiantes:', err)
-      } finally {
-        setLoading(false)
-      }
+      } catch (err) { console.error('Error cargando estudiantes:', err) }
+      finally { setLoading(false) }
     }
     cargar()
   }, [])
 
-  const gradosDelPeriodo = periodoSel
-    ? (periodos.find(p => p.id === periodoSel.id)?.grados || [])
-    : []
-  const gradoActual = gradoSel
-    ? (gradosDelPeriodo.find(g => g.id === gradoSel.id) || gradoSel)
-    : null
+  const gradosDelPeriodo = periodoSel ? (periodos.find(p => p.id === periodoSel.id)?.grados || []) : []
+  const gradoActual = gradoSel ? (gradosDelPeriodo.find(g => g.id === gradoSel.id) || gradoSel) : null
 
-  // Estudiantes únicos del grado (de todas sus materias)
   const estudiantesGrado = []
   if (gradoActual) {
     const mapa = {}
@@ -46,9 +35,7 @@ export default function Estudiantes() {
       ;(m.inscripciones || []).forEach(insc => {
         const est = insc.estudiante
         if (!est) return
-        if (!mapa[est.id]) {
-          mapa[est.id] = { ...est, materias: [], entregas: [], califs: [] }
-        }
+        if (!mapa[est.id]) mapa[est.id] = { ...est, materias: [], entregas: [], califs: [] }
         mapa[est.id].materias.push(m.nombre)
         ;(m.actividades || []).forEach(act => {
           const ent = (act.entregas || []).find(e => e.estudianteId === est.id)
@@ -62,10 +49,12 @@ export default function Estudiantes() {
     estudiantesGrado.push(...Object.values(mapa))
   }
 
-  // Todas las actividades del grado para la planilla
   const todasActividades = gradoActual
     ? (gradoActual.materias || []).flatMap(m =>
-        (m.actividades || []).map(a => ({ ...a, materiaNombre: m.nombre }))
+        (m.actividades || []).map(a => ({
+          ...a, materiaNombre: m.nombre,
+          tipo: a.soloForo ? 'foro' : (a.quiz ? 'quiz' : 'actividad')
+        }))
       )
     : []
 
@@ -75,75 +64,99 @@ export default function Estudiantes() {
   )
 
   const handleVolver = () => {
-    if (vista === 'lista') { setGradoSel(null); setBusqueda(''); setVista('grados') }
+    if (estSel) { setEstSel(null); return }
+    if (vista === 'lista') { setGradoSel(null); setBusqueda(''); setVista('grados'); setTab('lista') }
     else if (vista === 'grados') { setPeriodoSel(null); setVista('periodos') }
   }
 
-  const COLS = [
-    { bg: 'bg-[#EDE7FF]', border: 'border-purple-200', text: 'text-purple-700' },
-    { bg: 'bg-[#D6E8FF]', border: 'border-blue-200',   text: 'text-blue-700'   },
-    { bg: 'bg-[#DDF7E9]', border: 'border-green-200',  text: 'text-green-700'  },
-    { bg: 'bg-[#FFF4CC]', border: 'border-yellow-200', text: 'text-yellow-700' },
-  ]
+  const AVATARES = ['#7C3AED','#059669','#DC2626','#2563EB','#D97706','#DB2777']
+
+  const Card = ({ children, style = {} }) => (
+    <div style={{ background: '#1C1535', borderRadius: 16, border: '1px solid rgba(124,58,237,0.2)', boxShadow: '0 4px 20px rgba(0,0,0,0.25)', ...style }}>
+      {children}
+    </div>
+  )
 
   if (loading) return (
-    <Layout rol="PROFESOR" navItems={NAV}>
-      <div className="flex items-center justify-center h-64">
-        <div className="w-10 h-10 border-4 border-purple-600 border-t-transparent rounded-full animate-spin" />
+    <Layout rol="PROFESOR">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 260 }}>
+        <div style={{ width: 40, height: 40, border: '4px solid rgba(124,58,237,0.2)', borderTopColor: '#7C3AED', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
       </div>
     </Layout>
   )
 
   return (
-    <Layout rol="PROFESOR" navItems={NAV}>
-      <div className="max-w-6xl mx-auto px-5 py-6">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            {vista !== 'periodos' && (
-              <button onClick={handleVolver} className="w-9 h-9 bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-purple-50 hover:text-purple-600 hover:border-purple-200 transition-all shadow-sm">←</button>
+    <Layout rol="PROFESOR">
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 4px' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {vista !== 'periodos' && !estSel && (
+              <button onClick={handleVolver} style={{ width: 38, height: 38, background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A78BFA', fontSize: 18, cursor: 'pointer' }}>←</button>
             )}
-            <div>
-              <h2 className="text-2xl font-black text-gray-900">
-                {vista === 'periodos' && 'Estudiantes 👨‍🎓'}
-                {vista === 'grados' && ((periodoSel?.nombre || '') + ' — Grados')}
-                {vista === 'lista' && ((gradoSel?.nombre || '') + ' — Estudiantes')}
-              </h2>
-              <p className="text-gray-400 text-sm">
-                {vista === 'periodos' && 'Selecciona un periodo'}
-                {vista === 'grados' && 'Selecciona un grado'}
-                {vista === 'lista' && (estudiantesGrado.length + ' estudiantes inscritos')}
-              </p>
+            {estSel && (
+              <button onClick={() => setEstSel(null)} style={{ width: 38, height: 38, background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.3)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#A78BFA', fontSize: 18, cursor: 'pointer' }}>←</button>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg,#7C3AED,#4C1D95)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, boxShadow: '0 4px 14px rgba(124,58,237,0.4)' }}>
+                {estSel ? '👤' : vista === 'periodos' ? '📅' : vista === 'grados' ? '🎒' : '🎓'}
+              </div>
+              <div>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#E5E7EB', margin: 0 }}>
+                  {estSel ? estSel.nombre
+                    : vista === 'periodos' ? 'Estudiantes'
+                    : vista === 'grados' ? (periodoSel?.nombre + ' — Grados')
+                    : (gradoSel?.nombre + ' — Estudiantes')}
+                </h2>
+                <p style={{ fontSize: 12, color: 'rgba(167,139,250,0.7)', margin: 0 }}>
+                  {estSel ? 'Perfil del estudiante'
+                    : vista === 'periodos' ? 'Selecciona un periodo'
+                    : vista === 'grados' ? 'Selecciona un grado'
+                    : estudiantesGrado.length + ' estudiantes inscritos'}
+                </p>
+              </div>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 text-xs">
-            {periodoSel && <span className="bg-purple-100 text-purple-700 px-2.5 py-1 rounded-lg font-semibold">{periodoSel.nombre}</span>}
-            {gradoSel && <><span className="text-gray-300">›</span><span className="bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg font-semibold">{gradoSel.nombre}</span></>}
+          {/* Breadcrumb */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {periodoSel && <span style={{ background: 'rgba(124,58,237,0.2)', color: '#A78BFA', padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700, border: '1px solid rgba(124,58,237,0.3)' }}>{periodoSel.nombre}</span>}
+            {gradoSel && <><span style={{ color: 'rgba(167,139,250,0.4)' }}>›</span><span style={{ background: 'rgba(59,130,246,0.2)', color: '#60A5FA', padding: '4px 12px', borderRadius: 999, fontSize: 11, fontWeight: 700, border: '1px solid rgba(59,130,246,0.3)' }}>{gradoSel.nombre}</span></>}
           </div>
         </div>
 
         {/* PERIODOS */}
         {vista === 'periodos' && (
           periodos.length === 0 ? (
-            <div className="bg-white rounded-2xl p-16 text-center shadow-sm">
-              <span className="text-6xl">👨‍🎓</span>
-              <h3 className="text-xl font-bold text-gray-800 mt-4 mb-2">Sin periodos aun</h3>
-              <p className="text-gray-400 text-sm">Crea periodos y materias para que los estudiantes se inscriban</p>
-            </div>
+            <Card style={{ padding: '56px 24px', textAlign: 'center' }}>
+              <span style={{ fontSize: 48 }}>📭</span>
+              <p style={{ color: 'rgba(156,163,175,0.7)', marginTop: 12, fontWeight: 600 }}>Sin periodos aun</p>
+            </Card>
           ) : (
-            <div className="grid grid-cols-2 gap-5">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
               {periodos.map((p, i) => {
-                const c = COLS[i % COLS.length]
                 const numEst = new Set((p.grados || []).flatMap(g => (g.materias || []).flatMap(m => (m.inscripciones || []).map(ins => ins.estudianteId)))).size
+                const IMGS = [
+                  { bg: 'linear-gradient(135deg,#4C1D95,#7C3AED)', emoji: '🗓️' },
+                  { bg: 'linear-gradient(135deg,#1E40AF,#3B82F6)', emoji: '📆' },
+                  { bg: 'linear-gradient(135deg,#065F46,#059669)', emoji: '📅' },
+                  { bg: 'linear-gradient(135deg,#92400E,#F59E0B)', emoji: '🗒️' },
+                ]
+                const col = IMGS[i % IMGS.length]
                 return (
-                  <button key={p.id} onClick={() => { setPeriodoSel(p); setVista('grados') }}
-                    className={c.bg + ' border-2 ' + c.border + ' rounded-2xl p-8 text-left hover:scale-[1.02] hover:shadow-lg transition-all shadow-sm group'}>
-                    <div className="text-5xl mb-4">📅</div>
-                    <h3 className={'text-2xl font-bold ' + c.text + ' mb-1'}>{p.nombre}</h3>
-                    <p className="text-gray-500 text-sm">{numEst + ' estudiante' + (numEst !== 1 ? 's' : '')}</p>
-                    <div className={'mt-4 flex items-center gap-2 ' + c.text + ' text-sm font-semibold'}>
-                      <span>Ver grados</span><span className="group-hover:translate-x-1 transition-transform">→</span>
-                    </div>
-                  </button>
+                  <div key={p.id} style={{ borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', border: '1px solid rgba(124,58,237,0.25)', cursor: 'pointer' }}>
+                    <button onClick={() => { setPeriodoSel(p); setVista('grados') }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'block' }}>
+                      <div style={{ background: col.bg, height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', right: -20, bottom: -20, width: 90, height: 90, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+                        <span style={{ fontSize: 46, filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))', position: 'relative', zIndex: 1 }}>{col.emoji}</span>
+                      </div>
+                      <div style={{ background: '#1C1535', padding: '14px 18px 16px' }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 800, color: '#E5E7EB', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.nombre}</h3>
+                        <p style={{ fontSize: 12, color: 'rgba(156,163,175,0.65)', margin: '0 0 10px', fontWeight: 500 }}>{numEst} estudiante{numEst !== 1 ? 's' : ''}</p>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#A78BFA' }}>Ver grados →</span>
+                      </div>
+                    </button>
+                  </div>
                 )
               })}
             </div>
@@ -153,136 +166,297 @@ export default function Estudiantes() {
         {/* GRADOS */}
         {vista === 'grados' && (
           gradosDelPeriodo.length === 0 ? (
-            <div className="bg-white rounded-2xl p-14 text-center shadow-sm">
-              <span className="text-5xl">🎒</span>
-              <p className="text-gray-500 mt-3 font-semibold">Sin grados en este periodo</p>
-            </div>
+            <Card style={{ padding: '56px 24px', textAlign: 'center' }}>
+              <span style={{ fontSize: 48 }}>🎒</span>
+              <p style={{ color: 'rgba(156,163,175,0.7)', marginTop: 12, fontWeight: 600 }}>Sin grados en este periodo</p>
+            </Card>
           ) : (
-            <div className="grid grid-cols-3 gap-5">
-              {gradosDelPeriodo.map(g => {
-                const numEst = new Set((g.materias || []).flatMap(m => (m.inscripciones || []).map(i => i.estudianteId))).size
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 20 }}>
+              {gradosDelPeriodo.map((g, i) => {
+                const numEst = new Set((g.materias || []).flatMap(m => (m.inscripciones || []).map(ins => ins.estudianteId))).size
+                const IMGS = [
+                  { bg: 'linear-gradient(135deg,#7C3AED,#A855F7)', emoji: '🎒' },
+                  { bg: 'linear-gradient(135deg,#0369A1,#38BDF8)', emoji: '🏫' },
+                  { bg: 'linear-gradient(135deg,#B45309,#F59E0B)', emoji: '🎓' },
+                  { bg: 'linear-gradient(135deg,#065F46,#34D399)', emoji: '📚' },
+                ]
+                const col = IMGS[i % IMGS.length]
                 return (
-                  <button key={g.id} onClick={() => { setGradoSel(g); setVista('lista') }}
-                    className="bg-white rounded-2xl p-7 text-left hover:scale-[1.02] hover:shadow-lg transition-all shadow-sm border-2 border-gray-100 hover:border-purple-200 group">
-                    <div className="text-5xl mb-3">🎒</div>
-                    <h3 className="text-xl font-bold text-gray-800 mb-1">{g.nombre}</h3>
-                    <p className="text-gray-400 text-sm">{numEst + ' estudiantes'}</p>
-                    <div className="mt-3 flex items-center gap-2 text-purple-600 text-sm font-semibold">
-                      <span>Ver lista</span><span className="group-hover:translate-x-1 transition-transform">→</span>
-                    </div>
-                  </button>
+                  <div key={g.id} style={{ borderRadius: 18, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', border: '1px solid rgba(124,58,237,0.25)', cursor: 'pointer' }}>
+                    <button onClick={() => { setGradoSel(g); setVista('lista') }} style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'block' }}>
+                      <div style={{ background: col.bg, height: 110, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', right: -15, bottom: -15, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
+                        <span style={{ fontSize: 46, filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))', position: 'relative', zIndex: 1 }}>{col.emoji}</span>
+                      </div>
+                      <div style={{ background: '#1C1535', padding: '14px 18px 16px' }}>
+                        <h3 style={{ fontSize: 15, fontWeight: 800, color: '#E5E7EB', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{g.nombre}</h3>
+                        <p style={{ fontSize: 12, color: 'rgba(156,163,175,0.65)', margin: '0 0 10px', fontWeight: 500 }}>{numEst} estudiantes</p>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: '#A78BFA' }}>Ver lista →</span>
+                      </div>
+                    </button>
+                  </div>
                 )
               })}
             </div>
           )
         )}
 
-        {/* LISTA */}
-        {vista === 'lista' && (
-          <div className="space-y-5">
-            <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
-              <input type="text" placeholder="Buscar por nombre o email..." value={busqueda} onChange={e => setBusqueda(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-white rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-300 shadow-sm transition-all" />
+        {/* LISTA con dos pestañas */}
+        {vista === 'lista' && !estSel && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* Tabs */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[
+                { id: 'lista', label: 'Lista de estudiantes', icon: '🎓' },
+                { id: 'notas', label: 'Planilla de notas',    icon: '📋' },
+              ].map(t => (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 20px', borderRadius: 12, border: 'none', cursor: 'pointer', fontFamily: 'Poppins,sans-serif', fontSize: 13, fontWeight: 700, transition: 'all .15s',
+                    background: tab === t.id ? 'linear-gradient(135deg,#7C3AED,#6D28D9)' : 'rgba(124,58,237,0.08)',
+                    color: tab === t.id ? '#fff' : 'rgba(167,139,250,0.7)',
+                    boxShadow: tab === t.id ? '0 4px 14px rgba(124,58,237,0.35)' : 'none',
+                    border: tab === t.id ? 'none' : '1px solid rgba(124,58,237,0.2)'
+                  }}>
+                  <span>{t.icon}</span><span>{t.label}</span>
+                  {t.id === 'lista' && <span style={{ background: 'rgba(255,255,255,0.15)', padding: '1px 8px', borderRadius: 999, fontSize: 11 }}>{estudiantesGrado.length}</span>}
+                </button>
+              ))}
             </div>
 
-            {estudiantesFiltrados.length === 0 ? (
-              <div className="bg-white rounded-2xl p-14 text-center shadow-sm">
-                <span className="text-5xl">{busqueda ? '🔍' : '👨‍🎓'}</span>
-                <p className="text-gray-500 mt-3 font-semibold">{busqueda ? 'Sin resultados' : 'Sin estudiantes inscritos'}</p>
-                <p className="text-gray-400 text-sm mt-1">{busqueda ? 'Intenta con otro nombre' : 'Los estudiantes apareceran cuando se inscriban con la clave de matricula'}</p>
+            {/* TAB: Lista */}
+            {tab === 'lista' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Buscador */}
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#A78BFA', fontSize: 14 }}>🔍</span>
+                  <input type="text" placeholder="Buscar por nombre o email..." value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                    style={{ width: '100%', paddingLeft: 42, paddingRight: 16, paddingTop: 12, paddingBottom: 12, background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(124,58,237,0.25)', borderRadius: 12, fontFamily: 'Poppins,sans-serif', fontSize: 13.5, color: '#E5E7EB', outline: 'none', boxSizing: 'border-box' }}
+                    onFocus={e => { e.target.style.borderColor = '#7C3AED'; e.target.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.1)' }}
+                    onBlur={e => { e.target.style.borderColor = 'rgba(124,58,237,0.25)'; e.target.style.boxShadow = 'none' }}
+                  />
+                </div>
+
+                {estudiantesFiltrados.length === 0 ? (
+                  <Card style={{ padding: '56px 24px', textAlign: 'center' }}>
+                    <span style={{ fontSize: 48 }}>{busqueda ? '🔍' : '🎓'}</span>
+                    <p style={{ color: 'rgba(156,163,175,0.7)', marginTop: 12, fontWeight: 600 }}>{busqueda ? 'Sin resultados' : 'Sin estudiantes inscritos'}</p>
+                    <p style={{ color: 'rgba(156,163,175,0.5)', fontSize: 13, marginTop: 4 }}>{busqueda ? 'Intenta con otro nombre' : 'Los estudiantes se inscriben con la clave de matricula'}</p>
+                  </Card>
+                ) : (
+                  estudiantesFiltrados.map((est, idx) => {
+                    const color = AVATARES[idx % AVATARES.length]
+                    const prom = est.califs.length > 0 ? (est.califs.reduce((a, b) => a + b, 0) / est.califs.length).toFixed(1) : null
+                    const entregadas = est.entregas.filter(e => e.entregado).length
+                    return (
+                      <button key={est.id} onClick={() => setEstSel(est)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', background: '#1C1535', borderRadius: 16, border: '1px solid rgba(124,58,237,0.18)', cursor: 'pointer', textAlign: 'left', transition: 'all .15s', width: '100%' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(124,58,237,0.45)'; e.currentTarget.style.background = 'rgba(124,58,237,0.08)' }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(124,58,237,0.18)'; e.currentTarget.style.background = '#1C1535' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 18, color: '#fff', flexShrink: 0, boxShadow: '0 4px 12px ' + color + '55' }}>
+                          {est.nombre.charAt(0).toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 800, fontSize: 15, color: '#E5E7EB', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{est.nombre}</p>
+                          <p style={{ fontSize: 12, color: 'rgba(156,163,175,0.6)', margin: '0 0 4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{est.email}</p>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                            {est.materias.map((m, i) => (
+                              <span key={i} style={{ fontSize: 11, background: 'rgba(124,58,237,0.15)', color: '#A78BFA', padding: '2px 8px', borderRadius: 999, fontWeight: 600 }}>{m}</span>
+                            ))}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 20, flexShrink: 0, textAlign: 'center' }}>
+                          <div>
+                            <p style={{ fontSize: 18, fontWeight: 900, color: '#A78BFA', margin: 0 }}>{entregadas}<span style={{ fontSize: 11, color: 'rgba(156,163,175,0.5)', fontWeight: 400 }}>/{todasActividades.length}</span></p>
+                            <p style={{ fontSize: 10, color: 'rgba(156,163,175,0.5)', margin: '2px 0 0', fontWeight: 600 }}>ENTREGAS</p>
+                          </div>
+                          <div>
+                            <p style={{ fontSize: 18, fontWeight: 900, margin: 0, color: prom >= 7 ? '#34D399' : prom >= 5 ? '#FBBF24' : prom ? '#F87171' : 'rgba(156,163,175,0.4)' }}>{prom || '—'}</p>
+                            <p style={{ fontSize: 10, color: 'rgba(156,163,175,0.5)', margin: '2px 0 0', fontWeight: 600 }}>PROMEDIO</p>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', color: 'rgba(167,139,250,0.4)', fontSize: 20 }}>›</div>
+                        </div>
+                      </button>
+                    )
+                  })
+                )}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {estudiantesFiltrados.map(est => {
-                  const entregadas = est.entregas.filter(e => e.entregado).length
-                  const prom = est.califs.length > 0 ? (est.califs.reduce((a, b) => a + b, 0) / est.califs.length).toFixed(1) : null
+            )}
+
+            {/* TAB: Planilla de notas */}
+            {tab === 'notas' && (
+              <div>
+                {todasActividades.length === 0 || estudiantesGrado.length === 0 ? (
+                  <Card style={{ padding: '56px 24px', textAlign: 'center' }}>
+                    <span style={{ fontSize: 48 }}>📋</span>
+                    <p style={{ color: 'rgba(156,163,175,0.7)', marginTop: 12, fontWeight: 600 }}>Sin datos para mostrar</p>
+                  </Card>
+                ) : (
+                  <div style={{ background: '#1C1535', borderRadius: 16, border: '1px solid rgba(124,58,237,0.2)', overflow: 'auto', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' }}>
+                    <table style={{ width: '100%', fontSize: 12, borderCollapse: 'collapse', minWidth: 700 }}>
+                      <thead>
+                        <tr style={{ background: 'rgba(124,58,237,0.18)', borderBottom: '2px solid rgba(124,58,237,0.3)' }}>
+                          <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#A78BFA', position: 'sticky', left: 0, background: 'rgba(28,14,60,0.98)', minWidth: 36, borderRight: '1px solid rgba(124,58,237,0.15)' }}>Id</th>
+                          <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 700, color: '#A78BFA', minWidth: 160, borderRight: '1px solid rgba(124,58,237,0.15)' }}>Apellidos</th>
+                          <th style={{ textAlign: 'left', padding: '10px 12px', fontWeight: 700, color: '#A78BFA', minWidth: 130, borderRight: '1px solid rgba(124,58,237,0.15)' }}>Nombres</th>
+                          {todasActividades.slice(0, 10).map((act, i) => (
+                            <th key={act.id || i} style={{ textAlign: 'center', padding: '8px 6px', fontWeight: 700, color: act.tipo === 'quiz' ? '#FBBF24' : act.tipo === 'foro' ? '#60A5FA' : '#A78BFA', minWidth: 56, borderRight: '1px solid rgba(124,58,237,0.1)' }}>
+                              <div style={{ fontSize: 11, fontWeight: 800 }}>{act.tipo === 'quiz' ? '❓' : act.tipo === 'foro' ? '💬' : '📝'} A{i+1}</div>
+                              <div style={{ fontSize: 9, color: 'rgba(167,139,250,0.5)', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 52 }}>{act.titulo}</div>
+                            </th>
+                          ))}
+                          <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#FBBF24', minWidth: 50, borderLeft: '2px solid rgba(124,58,237,0.3)', borderRight: '1px solid rgba(124,58,237,0.1)' }}>20%</th>
+                          <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#60A5FA', minWidth: 50, borderRight: '1px solid rgba(124,58,237,0.1)' }}>Cons</th>
+                          <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 700, color: '#34D399', minWidth: 50, borderRight: '1px solid rgba(124,58,237,0.1)' }}>Full</th>
+                          <th style={{ textAlign: 'center', padding: '10px 8px', fontWeight: 800, color: '#fff', minWidth: 54, background: 'rgba(124,58,237,0.25)' }}>DEF</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {estudiantesGrado.map((est, idx) => {
+                          const color = AVATARES[idx % AVATARES.length]
+                          const notasData = todasActividades.slice(0, 10).map(act => {
+                            const ent = act.entregas?.find(e => e.estudianteId === est.id)
+                            return { nota: ent?.calificacion ?? null, actId: act.id }
+                          })
+                          const notasReales = notasData.filter(n => n.nota != null).map(n => n.nota)
+                          const prom = notasReales.length > 0 ? notasReales.reduce((a, b) => a + b, 0) / notasReales.length : null
+                          const pct20 = prom ? (prom * 0.2).toFixed(1) : null
+                          const def_ = prom ? prom.toFixed(1) : null
+                          const defColor = !def_ ? 'rgba(156,163,175,0.4)' : def_ >= 7 ? '#34D399' : def_ >= 5 ? '#FBBF24' : '#F87171'
+                          const partes = est.nombre.trim().split(' ')
+                          const apellidos = partes.slice(0,2).join(' ').toUpperCase()
+                          const nombres = partes.slice(2).join(' ') || partes[0]
+                          return (
+                            <tr key={est.id}
+                              style={{ borderBottom: '1px solid rgba(124,58,237,0.08)', transition: 'background .1s' }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'rgba(124,58,237,0.07)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                              <td style={{ textAlign: 'center', padding: '10px 8px', color: 'rgba(156,163,175,0.5)', fontSize: 11, position: 'sticky', left: 0, background: '#1C1535', borderRight: '1px solid rgba(124,58,237,0.12)' }}>{idx+1}</td>
+                              <td style={{ padding: '10px 12px', fontWeight: 700, color: '#E5E7EB', borderRight: '1px solid rgba(124,58,237,0.1)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 10, flexShrink: 0 }}>{est.nombre.charAt(0)}</div>
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{apellidos}</span>
+                                </div>
+                              </td>
+                              <td style={{ padding: '10px 12px', color: '#D1D5DB', borderRight: '1px solid rgba(124,58,237,0.1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>{nombres}</td>
+                              {notasData.map((nd, i) => {
+                                const { nota, actId } = nd
+                                const nc = nota == null ? 'rgba(156,163,175,0.25)' : nota >= 7 ? '#34D399' : nota >= 5 ? '#FBBF24' : '#F87171'
+                                const nb = nota == null ? 'transparent' : nota >= 7 ? 'rgba(52,211,153,0.12)' : nota >= 5 ? 'rgba(251,191,36,0.12)' : 'rgba(248,113,113,0.12)'
+                                return (
+                                  <td key={i} style={{ textAlign: 'center', padding: '10px 4px', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
+                                    <button onClick={() => navigate('/profesor/cursos')} title={nota != null ? 'Nota: ' + nota : 'Sin entregar'}
+                                      style={{ background: nb, border: nota != null ? '1px solid ' + nc + '40' : '1px dashed rgba(124,58,237,0.2)', borderRadius: 8, padding: '4px 6px', cursor: 'pointer', minWidth: 38, display: 'inline-block', transition: 'transform .1s' }}
+                                      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                                      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                                      <span style={{ fontWeight: 800, fontSize: 12, color: nc }}>{nota != null ? nota : '—'}</span>
+                                    </button>
+                                  </td>
+                                )
+                              })}
+                              <td style={{ textAlign: 'center', padding: '10px 6px', borderLeft: '2px solid rgba(124,58,237,0.2)', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
+                                <span style={{ fontWeight: 700, fontSize: 12, color: pct20 ? '#FBBF24' : 'rgba(156,163,175,0.3)' }}>{pct20 || '—'}</span>
+                              </td>
+                              <td style={{ textAlign: 'center', padding: '10px 6px', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
+                                <span style={{ fontWeight: 700, fontSize: 12, color: def_ ? '#60A5FA' : 'rgba(156,163,175,0.3)' }}>{def_ || '—'}</span>
+                              </td>
+                              <td style={{ textAlign: 'center', padding: '10px 6px', borderRight: '1px solid rgba(124,58,237,0.08)' }}>
+                                <span style={{ fontWeight: 700, fontSize: 12, color: def_ ? '#34D399' : 'rgba(156,163,175,0.3)' }}>{def_ || '—'}</span>
+                              </td>
+                              <td style={{ textAlign: 'center', padding: '10px 6px', background: def_ ? 'rgba(124,58,237,0.08)' : 'transparent' }}>
+                                <span style={{ fontWeight: 900, fontSize: 14, color: defColor }}>{def_ || '—'}</span>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* PERFIL ESTUDIANTE */}
+        {estSel && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 700 }}>
+            {/* Card principal */}
+            <Card style={{ padding: 28 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24 }}>
+                <div style={{ width: 72, height: 72, borderRadius: '50%', background: AVATARES[estudiantesGrado.findIndex(e => e.id === estSel.id) % AVATARES.length], display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 28, color: '#fff', flexShrink: 0, boxShadow: '0 8px 24px rgba(124,58,237,0.4)' }}>
+                  {estSel.nombre.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h2 style={{ fontSize: 22, fontWeight: 900, color: '#E5E7EB', margin: '0 0 4px' }}>{estSel.nombre}</h2>
+                  <p style={{ fontSize: 13, color: 'rgba(156,163,175,0.65)', margin: '0 0 8px' }}>{estSel.email}</p>
+                  <span style={{ background: 'rgba(124,58,237,0.2)', color: '#A78BFA', padding: '4px 12px', borderRadius: 999, fontSize: 12, fontWeight: 700, border: '1px solid rgba(124,58,237,0.3)' }}>
+                    🎓 Estudiante — {gradoSel?.nombre}
+                  </span>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+                {[
+                  { icon: '📚', label: 'Materias',  val: estSel.materias.length,                                                   color: '#A78BFA', bg: 'rgba(124,58,237,0.12)' },
+                  { icon: '📝', label: 'Entregas',  val: estSel.entregas.filter(e => e.entregado).length + '/' + todasActividades.length, color: '#60A5FA', bg: 'rgba(59,130,246,0.12)' },
+                  { icon: '⭐', label: 'Promedio',  val: estSel.califs.length > 0 ? (estSel.califs.reduce((a,b)=>a+b,0)/estSel.califs.length).toFixed(1) : '—', color: '#34D399', bg: 'rgba(16,185,129,0.12)' },
+                ].map((s, i) => (
+                  <div key={i} style={{ background: s.bg, borderRadius: 14, padding: '16px 18px', border: '1px solid ' + s.color + '30' }}>
+                    <div style={{ fontSize: 22, marginBottom: 8 }}>{s.icon}</div>
+                    <p style={{ fontSize: 22, fontWeight: 900, color: s.color, margin: 0, lineHeight: 1 }}>{s.val}</p>
+                    <p style={{ fontSize: 11, color: 'rgba(156,163,175,0.6)', margin: '4px 0 0', fontWeight: 600 }}>{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Materias inscritas */}
+            <Card style={{ padding: 24 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#E5E7EB', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>📚 Materias inscritas</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {estSel.materias.map((m, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', background: 'rgba(124,58,237,0.08)', borderRadius: 12, border: '1px solid rgba(124,58,237,0.15)' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(124,58,237,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>📖</div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#E5E7EB' }}>{m}</span>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            {/* Notas por actividad */}
+            <Card style={{ padding: 24 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#E5E7EB', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: 8 }}>📋 Notas por actividad</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {todasActividades.map((act, i) => {
+                  const ent = act.entregas?.find(e => e.estudianteId === estSel.id)
+                  const nota = ent?.calificacion ?? null
+                  const entregado = ent?.entregado ?? false
+                  const color = nota == null ? 'rgba(156,163,175,0.4)' : nota >= 7 ? '#34D399' : nota >= 5 ? '#FBBF24' : '#F87171'
+                  const bg = nota == null ? 'rgba(255,255,255,0.03)' : nota >= 7 ? 'rgba(52,211,153,0.08)' : nota >= 5 ? 'rgba(251,191,36,0.08)' : 'rgba(248,113,113,0.08)'
                   return (
-                    <div key={est.id} className="bg-white rounded-2xl p-5 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                      <div className="w-11 h-11 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold text-lg flex-shrink-0">
-                        {est.nombre.charAt(0).toUpperCase()}
+                    <div key={act.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: bg, borderRadius: 12, border: '1px solid rgba(124,58,237,0.1)' }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(124,58,237,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>
+                        {act.tipo === 'quiz' ? '❓' : act.tipo === 'foro' ? '💬' : '📝'}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-800">{est.nombre}</p>
-                        <p className="text-gray-400 text-xs truncate">{est.email}</p>
-                        <p className="text-gray-400 text-xs">{est.materias.join(', ')}</p>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: '#E5E7EB', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>A{i+1} — {act.titulo}</p>
+                        <p style={{ fontSize: 11, color: 'rgba(156,163,175,0.5)', margin: 0 }}>{act.materiaNombre}</p>
                       </div>
-                      <div className="flex gap-6 text-center flex-shrink-0">
-                        <div>
-                          <p className="font-bold text-purple-600">{entregadas + '/' + todasActividades.length}</p>
-                          <p className="text-xs text-gray-400">Entregas</p>
-                        </div>
-                        <div>
-                          <p className={'font-bold ' + (prom >= 7 ? 'text-green-600' : prom ? 'text-yellow-600' : 'text-gray-400')}>
-                            {prom ? (prom + '/10') : 'S/N'}
-                          </p>
-                          <p className="text-xs text-gray-400">Promedio</p>
-                        </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <p style={{ fontSize: 18, fontWeight: 900, color, margin: 0, lineHeight: 1 }}>{nota != null ? nota : '—'}</p>
+                        <p style={{ fontSize: 10, color: entregado ? '#34D399' : 'rgba(156,163,175,0.4)', margin: '2px 0 0', fontWeight: 600 }}>
+                          {entregado ? 'Entregado' : 'Pendiente'}
+                        </p>
                       </div>
                     </div>
                   )
                 })}
               </div>
-            )}
-
-            {todasActividades.length > 0 && estudiantesGrado.length > 0 && (
-              <div>
-                <h3 className="font-bold text-gray-800 text-lg mb-4">Planilla de notas — {periodoSel?.nombre}</h3>
-                <div className="bg-white rounded-2xl shadow-sm overflow-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-gray-100">
-                        <th className="text-left py-3 px-4 font-semibold text-gray-600 sticky left-0 bg-slate-50 min-w-40">Estudiante</th>
-                        {todasActividades.map(act => (
-                          <th key={act.id} className="text-center py-3 px-3 font-semibold text-gray-500 text-xs min-w-28">
-                            <div className="text-gray-600 truncate max-w-24">{act.titulo}</div>
-                            <div className="text-gray-400 font-normal">{act.materiaNombre}</div>
-                          </th>
-                        ))}
-                        <th className="text-center py-3 px-4 font-semibold text-gray-600 min-w-24">Promedio</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {estudiantesFiltrados.map(est => {
-                        const notas = todasActividades.map(act => {
-                          const ent = act.entregas?.find(e => e.estudianteId === est.id)
-                          return ent?.calificacion ?? null
-                        })
-                        const califs = notas.filter(n => n != null)
-                        const prom = califs.length > 0 ? (califs.reduce((a, n) => a + n, 0) / califs.length).toFixed(1) : null
-                        return (
-                          <tr key={est.id} className="border-b border-gray-50 hover:bg-slate-50 transition-colors">
-                            <td className="py-3 px-4 font-semibold text-gray-800 sticky left-0 bg-white">
-                              <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 bg-purple-100 rounded-full flex items-center justify-center text-purple-700 font-bold text-xs flex-shrink-0">{est.nombre.charAt(0)}</div>
-                                <span className="truncate max-w-32">{est.nombre}</span>
-                              </div>
-                            </td>
-                            {notas.map((nota, i) => (
-                              <td key={i} className="py-3 px-3 text-center">
-                                {nota != null
-                                  ? <span className={'font-bold ' + (nota >= 7 ? 'text-green-600' : nota >= 5 ? 'text-yellow-600' : 'text-red-500')}>{nota}</span>
-                                  : <span className="text-gray-300 text-xs">—</span>
-                                }
-                              </td>
-                            ))}
-                            <td className="py-3 px-4 text-center">
-                              {prom
-                                ? <span className={'font-bold ' + (prom >= 7 ? 'text-green-600' : prom >= 5 ? 'text-yellow-600' : 'text-red-500')}>{prom}</span>
-                                : <span className="text-gray-300 text-xs">—</span>
-                              }
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
+            </Card>
           </div>
         )}
+
       </div>
     </Layout>
   )
-} 
+}
